@@ -1,0 +1,5 @@
+rootProject.name = 'yauza-streaming-benchmark'
+
+include 'common'
+include 'data-generator'
+include 'benchmark-flink'
