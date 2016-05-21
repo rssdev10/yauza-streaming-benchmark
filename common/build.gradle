@@ -1,0 +1,28 @@
+/*
+ * This is common library project
+ */
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven'
+
+group = 'yauza.benchmark'
+version = '0.1'
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+    mavenLocal()
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+    // The production code uses the SLF4J logging API at compile time
+    compile 'org.slf4j:slf4j-api:1.7.18'
+    compile 'org.apache.logging.log4j:log4j:2.5'
+
+    testCompile 'junit:junit:4.12'
+}

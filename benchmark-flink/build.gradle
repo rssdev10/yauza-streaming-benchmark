@@ -1,0 +1,42 @@
+/*
+ * This is Flink streaming benchmark project
+ */
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven'
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    mavenLocal()
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+    // The production code uses the SLF4J logging API at compile time
+    compile 'org.slf4j:slf4j-api:1.7.18'
+    compile 'org.apache.logging.log4j:log4j:2.5'
+
+    compile 'org.apache.flink:flink-java:1.0.3'
+    compile 'org.apache.flink:flink-streaming-java_2.11:1.0.3'
+    compile 'org.apache.flink:flink-connector-kafka-0.9_2.11:1.0.3'
+
+    compile 'yauza.benchmark:common-library:0.1'
+
+    compile 'com.google.code.gson:gson:2.6.2'
+
+    testCompile 'junit:junit:4.12'
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'benchmark.flink.App'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}

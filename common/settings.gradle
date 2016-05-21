@@ -1,0 +1,6 @@
+/*
+ * Common library
+ */
+
+rootProject.name = 'common-library'
+//rootProject.name = 'common'
