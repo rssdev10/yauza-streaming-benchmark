@@ -16,9 +16,21 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 import yauza.benchmark.common.Event;
 
+/**
+ * This class implements aggregation by specified field and produces the number
+ *  of unique items
+ *
+ */
 public class UniqItems {
     private static final int partNum = 3;
 
+    /**
+     * Transform input stream and produce number of unique items
+     *
+     * @param eventStream input stream of Events
+     * @param fieldAccessor field access function which returns string value
+     * @return new chained stream
+     */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
                 .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % partNum);

@@ -13,6 +13,11 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import yauza.benchmark.common.Event;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 
+/**
+ * This class implements aggregation by specified field and calculation of
+ * the average value
+ *
+ */
 public class AvrCounter {
     private static final int partNum = 3;
 
@@ -26,6 +31,13 @@ public class AvrCounter {
         }
     }
     
+    /**
+     * Transform input stream and produce average value by specified field
+     *
+     * @param eventStream input stream of Events
+     * @param fieldAccessor field access function which returns Long value
+     * @return new chained stream
+     */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorLong fieldAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
                 .keyBy(event -> fieldAccessor.apply(event).intValue() % partNum);

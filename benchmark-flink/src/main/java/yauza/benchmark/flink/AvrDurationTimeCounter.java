@@ -20,6 +20,11 @@ import yauza.benchmark.common.Event;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 
+/**
+ * This class implements calculation of average duration of sessions by specified
+ * id and timestamp fields
+ *
+ */
 public class AvrDurationTimeCounter {
     private static final int partNum = 3;
 
@@ -45,6 +50,15 @@ public class AvrDurationTimeCounter {
 
     private static final TimeAggregate zeroTimeAggregate = new TimeAggregate();
 
+    /**
+     * Transform input stream and produce average duration of events
+     * by id from specified field
+     *
+     * @param eventStream input stream of Events
+     * @param fieldAccessor field access function which returns Long value
+     * @param timestampAccessor field access function which returns timestamp of the event
+     * @return new chained stream
+     */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor,
             FieldAccessorLong timestampAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
