@@ -68,10 +68,6 @@ public class App {
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();
                             return str != null && str.length() > 0;
-                        })
-                        .map(event -> {
-                            event.setUnixtimestamp(0l);
-                            return event;
                         }),
                         (event) -> event.getSessionId(),
                         (event) -> event.getUnixtimestamp()
