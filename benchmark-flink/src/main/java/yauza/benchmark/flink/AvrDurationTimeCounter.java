@@ -35,20 +35,28 @@ public class AvrDurationTimeCounter {
 
     private static class AverageAggregate {
         public double average = 0.0;
+        public long min = Long.MAX_VALUE;
+        public long max = Long.MIN_VALUE;
         public long count = 0l;
 
-        public AverageAggregate(long average, long count) {
+        public AverageAggregate(double average, long count) {
             this.average = average;
             this.count = count;
         }
 
+        public AverageAggregate(double average, long count, long min, long max) {
+            this.average = average;
+            this.count = count;
+            this.min = min;
+            this.max = max;
+        }
+
         @Override
         public String toString() {
-            return "AverageAggregate [average=" + average + ", count=" + count + "]";
+            return "AverageAggregate [average=" + average + ", min=" + min + ", max=" + max + ", count=" + count + "]";
         }
-    }
 
-    private static final TimeAggregate zeroTimeAggregate = new TimeAggregate();
+    }
 
     /**
      * Transform input stream and produce average duration of events
@@ -74,7 +82,10 @@ public class AvrDurationTimeCounter {
                     public Map<String, TimeAggregate> fold(Map<String, TimeAggregate> accumulator, Event value)
                             throws Exception {
                         String key = fieldAccessor.apply(value);
-                        TimeAggregate time = accumulator.getOrDefault(key, zeroTimeAggregate);
+                        TimeAggregate time = accumulator.get(key);
+                        if (time == null) {
+                            time = new TimeAggregate();
+                        }
                         time.lastTime = value.getUnixtimestamp();
                         if (time.firstTime == 0) {
                             time.firstTime = time.lastTime;
@@ -90,15 +101,30 @@ public class AvrDurationTimeCounter {
 
                     @Override
                     public AverageAggregate map(Map<String, TimeAggregate> value) throws Exception {
+                        long min = Long.MAX_VALUE;
+                        long max = Long.MIN_VALUE;
+
                         double avr = 0;
                         double count = 0;
                         for (Entry<String, TimeAggregate> entry : value.entrySet()) {
-                            count = count + 1;
-                            avr = avr * (count / (count + 1))
-                                    + (entry.getValue().lastTime - entry.getValue().firstTime) / (count + 1);
+                            long timeInterval = entry.getValue().lastTime - entry.getValue().firstTime;
+                            // Check for completed sessions only.
+                            // It means that at least two events must exist with different timestamps.
+                            if (timeInterval > 0) {
+                                avr = avr * (count / (count + 1)) + (timeInterval) / (count + 1);
+                                count = count + 1;
+
+                                if (min > timeInterval) {
+                                    min = timeInterval;
+                                }
+
+                                if (max < timeInterval) {
+                                    max = timeInterval;
+                                }
+                            }
                         }
-                        ;
-                        return new AverageAggregate((long) avr, (long) count);
+
+                        return new AverageAggregate(avr, (long) count, min, max);
                     }
                 });
 
@@ -112,8 +138,6 @@ public class AvrDurationTimeCounter {
                     @Override
                     public AverageAggregate fold(AverageAggregate accumulator, AverageAggregate value)
                             throws Exception {
-                        System.out.println(value.toString());
-
                         long countAcc = accumulator.count;
                         long countVal = value.count;
                         if (countAcc + value.count != 0) {
@@ -121,6 +145,16 @@ public class AvrDurationTimeCounter {
                                     + value.average * (countVal * 1.0 / (countAcc + countVal));
                             accumulator.count = countAcc + countVal;
                         }
+
+                        if (accumulator.min > value.min ) {
+                            accumulator.min = value.min;
+                        }
+
+                        if (accumulator.max < value.max) {
+                            accumulator.max = value.max;
+                        }
+
+                        System.out.println(value.toString());
                         return accumulator;
                     }
                 }).map(x -> Long.toString((long) x.average));
