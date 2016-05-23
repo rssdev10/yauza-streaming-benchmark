@@ -1,3 +1,29 @@
 //
 // Streaming benchmark
 //
+
+subprojects {
+    apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
+	apply plugin: 'maven'
+
+	group = 'yauza.benchmark'
+	version = '0.1'
+    repositories {
+	    jcenter()
+	    mavenLocal()
+    }
+    dependencies {
+	    compile 'org.slf4j:slf4j-api:1.7.18'
+	    compile 'org.apache.logging.log4j:log4j:2.5'
+
+        testCompile "junit:junit:4.12"
+    }
+}
+
+project(':benchmark-flink') {
+	dependencies {
+		compile project(':common-library')
+	}
+}
