@@ -4,4 +4,6 @@
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
+
+    compile 'com.google.code.gson:gson:2.6.2'
 }

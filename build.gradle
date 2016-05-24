@@ -22,8 +22,16 @@ subprojects {
     }
 }
 
+configure(subprojects.findAll {it.name != 'common-library'}) {
+    dependencies {
+        compile project(':common-library')
+    }
+}
+
+/*
 project(':benchmark-flink') {
 	dependencies {
 		compile project(':common-library')
 	}
 }
+*/

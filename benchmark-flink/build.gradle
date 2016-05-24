@@ -9,8 +9,6 @@ dependencies {
     compile 'org.apache.flink:flink-connector-kafka-0.9_2.11:1.0.3'
 
     //compile 'yauza.benchmark:common-library:0.1'
-
-    compile 'com.google.code.gson:gson:2.6.2'
 }
 
 task fatJar(type: Jar) {
