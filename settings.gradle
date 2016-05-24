@@ -1,6 +1,6 @@
 rootProject.name = 'yauza-streaming-benchmark'
 
 include ':common-library', 'benchmark-flink'
-// include ':common-library', 'data-generator'
+include ':common-library', 'data-generator'
 
 project(':common-library').projectDir = "$rootDir/common" as File
