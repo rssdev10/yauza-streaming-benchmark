@@ -17,6 +17,9 @@ import com.google.gson.Gson;
 import yauza.benchmark.common.Event;
 
 public class App {
+    public static final int partNum = 3;
+    public static final int emergencyTriggerTimeout = 3;
+
     private static Gson gson = new Gson(); 
 
     public static void main(String[] args) throws Exception {

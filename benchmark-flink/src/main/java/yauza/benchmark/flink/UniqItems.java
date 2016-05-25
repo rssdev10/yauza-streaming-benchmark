@@ -10,7 +10,7 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.triggers.ProcessingTimeTrigger;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
+import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.accessors.FieldAccessorString;
@@ -22,8 +22,6 @@ import yauza.benchmark.common.Event;
  *
  */
 public class UniqItems {
-    private static final int partNum = 3;
-
     /**
      * Transform input stream and produce number of unique items
      *
@@ -33,7 +31,7 @@ public class UniqItems {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % partNum);
+                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % App.partNum);
 
         WindowedStream<Event, Integer, TimeWindow> uniqUsersWin = userIdKeyed.timeWindow(Time.seconds(10));
 
@@ -48,9 +46,12 @@ public class UniqItems {
                     }
                 });
 
-        AllWindowedStream<Set<String>, GlobalWindow> uniqUsers10sec = uniqUsers.countWindowAll(partNum);
+        AllWindowedStream<Set<String>, TimeWindow> combinedUniqNumStream =
+                uniqUsers
+                .timeWindowAll(Time.seconds(App.emergencyTriggerTimeout))
+                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(App.partNum)));
 
-        return uniqUsers10sec.fold(0, new FoldFunction<Set<String>, Integer>() {
+        return combinedUniqNumStream.fold(0, new FoldFunction<Set<String>, Integer>() {
             private static final long serialVersionUID = 7167358208807786523L;
 
             @Override

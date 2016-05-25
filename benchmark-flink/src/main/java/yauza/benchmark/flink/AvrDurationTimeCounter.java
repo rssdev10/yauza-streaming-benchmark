@@ -13,7 +13,7 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.triggers.ProcessingTimeTrigger;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
+import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Event;
@@ -69,12 +69,14 @@ public class AvrDurationTimeCounter {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor,
             FieldAccessorLong timestampAccessor) {
-        KeyedStream<Event, Integer> userIdKeyed = eventStream
+        KeyedStream<Event, Integer> keyedByIdHash = eventStream
                 .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % partNum);
 
-        WindowedStream<Event, Integer, TimeWindow> uniqUsersWin = userIdKeyed.timeWindow(Time.seconds(10));
+        WindowedStream<Event, Integer, TimeWindow> timedWindowStream =
+                keyedByIdHash.timeWindow(Time.seconds(10));
 
-        DataStream<Map<String, TimeAggregate>> timeIntervals = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
+        DataStream<Map<String, TimeAggregate>> timeIntervals =
+                timedWindowStream.trigger(ProcessingTimeTrigger.create())
                 .fold(new HashMap<String, TimeAggregate>(), new FoldFunction<Event, Map<String, TimeAggregate>>() {
                     private static final long serialVersionUID = -4469946090186220007L;
 
@@ -128,8 +130,10 @@ public class AvrDurationTimeCounter {
                     }
                 });
 
-        AllWindowedStream<AverageAggregate, GlobalWindow> winStreamOfAvrIntervals = streamOfAverageIntervals
-                .countWindowAll(partNum);
+        AllWindowedStream<AverageAggregate, TimeWindow> winStreamOfAvrIntervals =
+                streamOfAverageIntervals
+                .timeWindowAll(Time.seconds(App.emergencyTriggerTimeout))
+                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(App.partNum)));
 
         return winStreamOfAvrIntervals
                 .fold(new AverageAggregate(0, 0), new FoldFunction<AverageAggregate, AverageAggregate>() {
