@@ -1,22 +1,28 @@
 //
-// Streaming benchmark
+// Yauza Streaming Benchmark
 //
+
+apply from: "dependencies.gradle"
 
 subprojects {
     apply plugin: 'java'
-	apply plugin: 'eclipse'
-	apply plugin: 'idea'
-	apply plugin: 'maven'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+    apply plugin: 'maven'
 
-	group = 'yauza.benchmark'
-	version = '0.1'
+    apply from: "$rootDir/dependencies.gradle"
+
+    group = app.group
+    version = app.version
+
     repositories {
-	    jcenter()
-	    mavenLocal()
+        jcenter()
+        mavenLocal()
     }
+
     dependencies {
-	    compile 'org.slf4j:slf4j-api:1.7.18'
-	    compile 'org.apache.logging.log4j:log4j:2.5'
+        compile 'org.slf4j:slf4j-api:1.7.18'
+        compile 'org.apache.logging.log4j:log4j:2.5'
 
         testCompile "junit:junit:4.12"
     }
@@ -30,8 +36,9 @@ configure(subprojects.findAll {it.name != 'common-library'}) {
 
 /*
 project(':benchmark-flink') {
-	dependencies {
-		compile project(':common-library')
-	}
+    dependencies {
+        compile project(':common-library')
+    }
 }
 */
+

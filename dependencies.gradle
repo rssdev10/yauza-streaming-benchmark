@@ -1,0 +1,19 @@
+ext {
+    app = [
+        version: '0.1',
+        group: 'yauza.benchmark'
+    ]
+
+    ver = [
+        'slf4j-api': '1.7.18',
+        'log4j': '2.5',
+
+        'junit': '4.12',
+
+        'gson': '2.6.2',
+
+        'flink': '1.0.3',
+        'kafka': '0.9',
+        'scala': '2.11'
+    ]
+}

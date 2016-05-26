@@ -4,9 +4,9 @@
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    compile 'org.apache.flink:flink-java:1.0.3'
-    compile 'org.apache.flink:flink-streaming-java_2.11:1.0.3'
-    compile 'org.apache.flink:flink-connector-kafka-0.9_2.11:1.0.3'
+    compile "org.apache.flink:flink-java:${ver.flink}"
+    compile "org.apache.flink:flink-streaming-java_${ver.scala}:${ver.flink}"
+    compile "org.apache.flink:flink-connector-kafka-${ver.kafka}_${ver.scala}:${ver.flink}"
 }
 
 task fatJar(type: Jar) {
