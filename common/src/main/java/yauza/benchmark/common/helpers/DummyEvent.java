@@ -11,6 +11,9 @@ import com.google.gson.Gson;
 
 import yauza.benchmark.common.Event;
 
+/**
+  Generator of event sequence with predefined realistic fields.
+*/
 public class DummyEvent {
     private static Gson gson = new Gson();
 
@@ -21,7 +24,7 @@ public class DummyEvent {
     private static final int maxPrice = 10000; // in cents
 
     private static long timestamp = 0;
-    
+
     private static List<String> provider = new ArrayList<String>(){
         private static final long serialVersionUID = -2650978174049138472L;
     {
@@ -56,6 +59,7 @@ public class DummyEvent {
         if (rand.nextInt(100) < percentagePurchase) {
             event.setProvider(provider.get(rand.nextInt(provider.size())));
             event.setReceiptId(UUID.randomUUID().toString());
+            //
             event.setPrice(new Long(rand.nextInt(maxPrice)));
         }
 

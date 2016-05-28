@@ -3,6 +3,10 @@ package yauza.benchmark.common;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
+/**
+  Class for manipulation with universal event. This class presents absract
+  event structure about current app's activity from mobile devices to web server
+*/
 public class Event {
     public static final String eventTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 

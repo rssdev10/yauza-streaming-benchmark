@@ -19,6 +19,10 @@ import java.io.IOException;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+/**
+  This test case provides checking of json parsing and spliting into separate
+  Events.
+*/
 public class LoaderTest {
     private static Gson gson = new Gson();
     private static final int eventsNum = 100;
@@ -51,7 +55,7 @@ public class LoaderTest {
 
     /**
      * Test possibility to read file with json.
-     * 
+     *
      * @throws Exception
      */
     @Test public void testInputFileSplitting() throws Exception {
