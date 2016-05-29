@@ -14,6 +14,7 @@ ext {
 
         'flink': '1.0.3',
         'kafka': '0.9',
-        'scala': '2.11'
+        'scala': '2.11',
+        'scala-lib': '2.11.8'
     ]
 }

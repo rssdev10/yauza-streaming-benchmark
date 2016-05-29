@@ -1,0 +1,18 @@
+apply plugin: 'scala'
+
+dependencies{
+    compile 'org.slf4j:slf4j-api:' + ver.'slf4j-api'
+    compile "org.scala-lang:scala-library:" + ver.'scala-lib'
+    testCompile "junit:junit:" + ver.junit
+}
+
+task setup(type: JavaExec, dependsOn: classes) {
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    main = 'Main'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
