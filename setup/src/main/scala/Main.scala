@@ -14,8 +14,7 @@ object Main extends App {
   println(apacheMirror)
 
   private def getApacheMirror(): String = {
-    val pattern = "<strong>(.+)</strong>".r
     val str = Source.fromURL("https://www.apache.org/dyn/closer.cgi").mkString
-    pattern.findFirstMatchIn(str).get.group(1)
+    ("""<strong>(.+)</strong>""".r).findFirstMatchIn(str).get.group(1)
   }
 }
