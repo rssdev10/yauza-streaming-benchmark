@@ -34,6 +34,10 @@ configure(subprojects.findAll {it.name != 'common-library'}) {
     }
 }
 
+def major(version) {
+    return version.split('\\.').take(2).join('.')
+}
+
 /*
 project(':benchmark-flink') {
     dependencies {

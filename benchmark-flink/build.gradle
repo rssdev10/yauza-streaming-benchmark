@@ -6,7 +6,7 @@
 dependencies {
     compile "org.apache.flink:flink-java:${ver.flink}"
     compile "org.apache.flink:flink-streaming-java_${ver.scala}:${ver.flink}"
-    compile "org.apache.flink:flink-connector-kafka-${ver.kafka}_${ver.scala}:${ver.flink}"
+    compile "org.apache.flink:flink-connector-kafka-${major(ver.kafka)}_${ver.scala}:${ver.flink}"
 
     //compile 'yauza.benchmark:common-library:0.1'
 }
