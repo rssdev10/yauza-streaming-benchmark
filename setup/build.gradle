@@ -12,6 +12,19 @@ task setup(type: JavaExec, dependsOn: classes) {
         k,v -> environment[k] = v
     }
 
+    args 'setup'
+    main = 'Main'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
+task test_flink(type: JavaExec, dependsOn: classes) {
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    args 'test_flink'
     main = 'Main'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
