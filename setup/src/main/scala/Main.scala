@@ -6,6 +6,9 @@ import scala.language.postfixOps
 import scala.sys.process._
 
 object Main {
+
+  private val TIME_OF_TEST: Int = 30 * 1000 /* in ms */
+
   private val apacheMirror = getApacheMirror
 
   //println("ls -l" !)
@@ -15,7 +18,8 @@ object Main {
     "kafka" -> "0.9.0.1",
     "scala" -> "2.11",
     "storm" -> "1.0.1",
-    "spark" -> "1.5.1"
+    "spark" -> "1.6.1",
+    "hadoop" -> "2.7.2"
   ).map {case (k,v) => (k, scala.util.Properties.envOrElse(k, v))}
 
   val products: Map[String, Product] = Map(
@@ -70,7 +74,26 @@ object Main {
       override def stop: Unit = {
 
       }
+    },
+
+    "hadoop" -> new Product(
+      s"""hadoop-${VER("hadoop")}""",
+      s"""hadoop-${VER("hadoop")}.tar.gz""",
+      s"""$apacheMirror/hadoop/common/hadoop-${VER("hadoop")}""") {
+      override def start: Unit = {
+        s"""$dirName/sbin/start-dfs.sh""" !
+      }
+
+      override def stop: Unit = {
+        s"""$dirName/sbin/stop-dfs.sh""" !
+      }
+
+      override def config: Unit = {
+        s"""cp -f conf/hadoop $dirName/etc/hadoop""" !;
+        s"""$dirName/bin/hdfs namenode -format -force""" !
+      }
     }
+
   )
 
   val scenario: Map[String, () => Unit] = Map(
@@ -78,12 +101,22 @@ object Main {
       //println(apacheMirror)
       // download all products
       products.foreach { case (k, v) => if (v.urlPath.nonEmpty) v.downloadAndUntar() }
+      products.foreach { case (k, v) => try { v.config }  }
     }),
+
     "test_flink" -> (() => {
       // try to run Flink
-      products("flink").start
-      Thread sleep 30000
-      products("flink").stop
+      val seq = Array(
+//        "zookeeper",
+        "hadoop",
+        "kafka",
+        "flink"
+      )
+      seq.foreach(products(_).start)
+
+      Thread sleep TIME_OF_TEST
+
+      seq.reverse.foreach(products(_).stop)
     })
   )
 
@@ -108,11 +141,7 @@ object Main {
   }
 
   def pidBySample(sample: String): String = try {
-    val line = ("ps -aef" !!)
-    if (line.nonEmpty)
-      line.split("\n").find(str => str.contains(sample)).head.split(" ").filter(_.nonEmpty).apply(1)
-    else
-      ""
+    ("ps -aef" !!).split("\n").find(str => str.contains(sample)).head.split(" ").filter(_.nonEmpty).apply(1)
   } catch {
     case _: Throwable => ""
   }
@@ -163,6 +192,8 @@ object Main {
       val tar = "tar -xzvf " + System.getProperty("user.dir") + "/" + localFile
       tar !
     }
+
+    def config : Unit = {}
 
     def start : Unit
     def stop : Unit

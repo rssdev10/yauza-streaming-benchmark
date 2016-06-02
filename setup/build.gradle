@@ -7,24 +7,28 @@ dependencies{
 }
 
 task setup(type: JavaExec, dependsOn: classes) {
+    args 'setup'
+
     // copy versions of packages
     ver.each {
         k,v -> environment[k] = v
     }
 
-    args 'setup'
+    workingDir("../")
     main = 'Main'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
 
 task test_flink(type: JavaExec, dependsOn: classes) {
+    args 'test_flink'
+
     // copy versions of packages
     ver.each {
         k,v -> environment[k] = v
     }
 
-    args 'test_flink'
+    workingDir("../")
     main = 'Main'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
