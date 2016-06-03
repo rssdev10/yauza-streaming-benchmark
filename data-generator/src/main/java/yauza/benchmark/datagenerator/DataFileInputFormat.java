@@ -11,7 +11,7 @@ import org.apache.flink.core.fs.Path;
 public class DataFileInputFormat extends PrimitiveInputFormat<String> {
 
     private static final long serialVersionUID = 8341785562068427225L;
-    private static final String delimiter = "{'empty':''}";
+    public static final String delimiter = "{'empty':''}";
 
     public DataFileInputFormat(String filePath) {
         super(new Path(filePath), delimiter, String.class);
