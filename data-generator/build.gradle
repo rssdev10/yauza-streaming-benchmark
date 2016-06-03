@@ -7,13 +7,18 @@ dependencies {
     compile "org.apache.flink:flink-java:${ver.flink}"
     compile "org.apache.flink:flink-streaming-java_${ver.scala}:${ver.flink}"
     compile "org.apache.flink:flink-connector-kafka-${major(ver.kafka)}_${ver.scala}:${ver.flink}"
+    compile 'org.apache.hadoop:hadoop-hdfs:2.7.2'
+    compile 'org.apache.hadoop:hadoop-common:2.7.2'
+    compile 'org.apache.hadoop:hadoop-auth:2.7.2'
 }
 
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Main-Class': 'datagenerator.Loader'
+        attributes 'Main-Class': 'yauza.benchmark.datagenerator.Loader'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
+
+    destinationDir = new File("./bin/")
 }
