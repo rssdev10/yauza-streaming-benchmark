@@ -14,12 +14,16 @@ object Main {
   //println("ls -l" !)
 
   val VER = Map(
+    // system
     "flink" -> "1.0.3",
     "kafka" -> "0.9.0.1",
     "scala" -> "2.11",
     "storm" -> "1.0.1",
     "spark" -> "1.6.1",
-    "hadoop" -> "2.7.2"
+    "hadoop" -> "2.7.2",
+
+    // benchmark
+    "data-generator" -> "0.1"
   ).map {case (k,v) => (k, scala.util.Properties.envOrElse(k, v))}
 
   val products: Map[String, Product] = Map(
@@ -55,11 +59,25 @@ object Main {
       s"""kafka_${VER("scala")}-${VER("kafka")}.tgz""",
       s"""$apacheMirror/kafka/${VER("kafka")}""") {
       override def start: Unit = {
+        val ZK_CONNECTIONS = "localhost"
+        val TOPIC = "yauza_input"
+        val PARTITIONS = 1
 
+        startIfNeeded("kafka\\.Kafka", "Kafka", 10,
+          s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
+
+        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper "$ZK_CONNECTIONS" --topic $TOPIC 2>/dev/null""" #| s"grep -c $TOPIC" !
+
+        if (count.toInt == 0) {
+          s"""$dirName/bin/kafka-topics.sh --create --zookeeper "$ZK_CONNECTIONS" --replication-factor 1 --partitions $PARTITIONS --topic $TOPIC""" !
+        } else {
+          println(s"Kafka topic $TOPIC already exists")
+        }
       }
 
       override def stop: Unit = {
-
+        stopIfNeeded( "kafka\\.Kafka", "Kafka")
+        "rm -rf /tmp/kafka-logs/" !
       }
     },
 
@@ -92,6 +110,22 @@ object Main {
         s"""cp -f conf/hadoop $dirName/etc/hadoop""" !;
         s"""$dirName/bin/hdfs namenode -format -force""" !
       }
+    },
+
+    "data-generator" -> new Product(
+      "./bin",
+      s"""data-generator-all-${VER("data-generator")}.jar""",
+      "") {
+      override def start: Unit = {
+        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers  localhost""" !
+      }
+
+      override def stop: Unit = {
+      }
+
+      override def config: Unit = {
+        s"""java -jar $dirName/$fileName --mode generate_file""" !
+      }
     }
 
   )
@@ -101,7 +135,22 @@ object Main {
       //println(apacheMirror)
       // download all products
       products.foreach { case (k, v) => if (v.urlPath.nonEmpty) v.downloadAndUntar() }
-      products.foreach { case (k, v) => try { v.config }  }
+      products.foreach { case (k, v) =>
+        try {
+          v.config
+        } catch {
+          case _: Throwable =>
+        }
+      }
+    }),
+
+    "test_data_prepare" -> (() => {
+      products("hadoop").config
+      products("hadoop").start
+
+      products("data-generator").config
+
+      products("hadoop").stop
     }),
 
     "test_flink" -> (() => {
@@ -110,7 +159,8 @@ object Main {
 //        "zookeeper",
         "hadoop",
         "kafka",
-        "flink"
+        "flink",
+        "data-generator"
       )
       seq.foreach(products(_).start)
 
