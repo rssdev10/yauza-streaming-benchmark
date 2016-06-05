@@ -2,8 +2,10 @@ apply plugin: 'scala'
 
 dependencies{
     compile 'org.slf4j:slf4j-api:' + ver.'slf4j-api'
-    compile "org.scala-lang:scala-library:" + ver.'scala-lib'
     testCompile "junit:junit:" + ver.junit
+
+    compile "org.scala-lang:scala-library:" + ver.'scala-lib'
+    runtime "org.scala-lang:scala-compiler:" + ver.'scala-lib'
 }
 
 task setup(type: JavaExec, dependsOn: classes) {
@@ -32,4 +34,25 @@ task test_flink(type: JavaExec, dependsOn: classes) {
     main = 'Main'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
+}
+
+task test_data_prepare(type: JavaExec, dependsOn: classes) {
+    args 'test_data_prepare'
+
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    workingDir("../")
+    main = 'Main'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
+task repl(type:JavaExec) {
+    main = "scala.tools.nsc.MainGenericRunner"
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput System.in
+    args '-usejavacp'
 }
