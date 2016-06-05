@@ -17,7 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- *
+ * This class provides generation of events and writes them into HDFS
  */
 public class HdfsWriter {
     Logger LOG = LoggerFactory.getLogger(HdfsWriter.class);

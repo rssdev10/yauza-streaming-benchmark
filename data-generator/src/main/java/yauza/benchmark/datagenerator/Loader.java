@@ -44,9 +44,10 @@ public class Loader {
         }
         String mode = parameterTool.get("mode", "load_to_kafka");
         if (mode.equals("generate_file")) {
+            // generate data and write into HDFS
             new HdfsWriter().generate(hdfsPath, dataFile);
         } else {
-
+            // load data from HDFS and send to the Kafka's queue
             final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
             String filePath = hdfsPath + dataFile;
