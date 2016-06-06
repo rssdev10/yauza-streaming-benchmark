@@ -12,28 +12,39 @@ object Main {
   private val apacheMirror = getApacheMirror
 
   //println("ls -l" !)
+  object Product extends Enumeration {
+    val flink = "flink"
+    val kafka = "kafka"
+    val zookeeper = "zookeeper"
+    val scala_bin = "scala"
+    val storm = "storm"
+    val spark = "spark"
+    val hadoop = "hadoop"
+    val datagenerator = "data-generator"
+  }
+  import Product._
 
   val VER = Map(
     // system
-    "flink" -> "1.0.3",
-    "kafka" -> "0.9.0.1",
-    "scala" -> "2.11",
-    "storm" -> "1.0.1",
-    "spark" -> "1.6.1",
-    "hadoop" -> "2.7.2",
+    flink -> "1.0.3",
+    kafka -> "0.9.0.1",
+    scala_bin -> "2.11",
+    storm -> "1.0.1",
+    spark -> "1.6.1",
+    hadoop -> "2.7.2",
 
     // benchmark
-    "data-generator" -> "0.1"
+    datagenerator -> "0.1"
   ).map {case (k,v) => (k, scala.util.Properties.envOrElse(k, v))}
 
   val products: Map[String, Product] = Map(
-    "flink" -> new Product(
-      s"""flink-${VER("flink")}""",
-      s"""flink-${VER("flink")}-bin-hadoop27-scala_${VER("scala")}.tgz""",
-      s"""$apacheMirror/flink/flink-${VER("flink")}"""
+    flink -> new Product(
+      s"""flink-${VER(flink)}""",
+      s"""flink-${VER(flink)}-bin-hadoop27-scala_bin_${VER(scala_bin)}.tgz""",
+      s"""$apacheMirror/flink/flink-${VER(flink)}"""
     ) {
       override def start: Unit = {
-        startIfNeeded("org.apache.flink.runtime.jobmanager.JobManager", "Flink", 1, s"""$dirName/bin/start-local.sh""")
+        startIfNeeded("org.apache.flink.runtime.jobmanager.JobManager", flink, 1, s"""$dirName/bin/start-local.sh""")
       }
 
       override def stop: Unit = {
@@ -41,10 +52,10 @@ object Main {
       }
     },
 
-    "spark" -> new Product(
-      s"""spark-${VER("spark")}-bin-hadoop2.6""",
-      s"""spark-${VER("spark")}-bin-hadoop2.6.tgz""",
-      s"""$apacheMirror/spark/spark-${VER("spark")}""") {
+    spark -> new Product(
+      s"""spark-${VER(spark)}-bin-hadoop2.6""",
+      s"""spark-${VER(spark)}-bin-hadoop2.6.tgz""",
+      s"""$apacheMirror/spark/spark-${VER(spark)}""") {
       override def start: Unit = {
 
       }
@@ -54,16 +65,16 @@ object Main {
       }
     },
 
-    "kafka" -> new Product(
-      s"""kafka_${VER("scala")}-${VER("kafka")}""",
-      s"""kafka_${VER("scala")}-${VER("kafka")}.tgz""",
-      s"""$apacheMirror/kafka/${VER("kafka")}""") {
+    kafka -> new Product(
+      s"""kafka_${VER(scala_bin)}-${VER(kafka)}""",
+      s"""kafka_${VER(scala_bin)}-${VER(kafka)}.tgz""",
+      s"""$apacheMirror/kafka/${VER(kafka)}""") {
       override def start: Unit = {
         val ZK_CONNECTIONS = "localhost"
         val TOPIC = "yauza_input"
         val PARTITIONS = 1
 
-        startIfNeeded("kafka\\.Kafka", "Kafka", 10,
+        startIfNeeded("kafka\\.Kafka", kafka, 10,
           s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
 
         val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper "$ZK_CONNECTIONS" --topic $TOPIC 2>/dev/null""" #| s"grep -c $TOPIC" !
@@ -76,15 +87,15 @@ object Main {
       }
 
       override def stop: Unit = {
-        stopIfNeeded( "kafka\\.Kafka", "Kafka")
+        stopIfNeeded( "kafka\\.Kafka", kafka)
         "rm -rf /tmp/kafka-logs/" !
       }
     },
 
-    "storm" -> new Product(
-      s"""apache-storm-${VER("storm")}""",
-      s"""apache-storm-${VER("storm")}.tar.gz""",
-      s"""$apacheMirror/storm/apache-storm-${VER("storm")}""") {
+    storm -> new Product(
+      s"""apache-storm-${VER(storm)}""",
+      s"""apache-storm-${VER(storm)}.tar.gz""",
+      s"""$apacheMirror/storm/apache-storm-${VER(storm)}""") {
       override def start: Unit = {
 
       }
@@ -94,10 +105,10 @@ object Main {
       }
     },
 
-    "hadoop" -> new Product(
-      s"""hadoop-${VER("hadoop")}""",
-      s"""hadoop-${VER("hadoop")}.tar.gz""",
-      s"""$apacheMirror/hadoop/common/hadoop-${VER("hadoop")}""") {
+    hadoop -> new Product(
+      s"""hadoop-${VER(hadoop)}""",
+      s"""hadoop-${VER(hadoop)}.tar.gz""",
+      s"""$apacheMirror/hadoop/common/hadoop-${VER(hadoop)}""") {
       override def start: Unit = {
         s"""$dirName/sbin/start-dfs.sh""" !
       }
@@ -112,12 +123,24 @@ object Main {
       }
     },
 
-    "data-generator" -> new Product(
+    zookeeper -> new Product(
+      s"""apache-storm-${VER(storm)}""", "", "") {
+      override def start: Unit = {
+        startIfNeeded("dev_zookeeper", zookeeper, 10, s"$dirName/bin/storm", "dev-zookeeper")
+      }
+
+      override def stop: Unit = {
+        stopIfNeeded("dev_zookeeper", zookeeper)
+        "rm -rf /tmp/dev-storm-zookeeper" !
+      }
+    },
+
+    datagenerator -> new Product(
       "./bin",
-      s"""data-generator-all-${VER("data-generator")}.jar""",
+      s"""data-generator-all-${VER(datagenerator)}.jar""",
       "") {
       override def start: Unit = {
-        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers  localhost""" !
+        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers localhost:9092""" !
       }
 
       override def stop: Unit = {
@@ -145,27 +168,39 @@ object Main {
     }),
 
     "test_data_prepare" -> (() => {
-      products("hadoop").config
-      products("hadoop").start
+      products(hadoop).config
+      products(hadoop).start
 
-      products("data-generator").config
+      products(datagenerator).config
 
-      products("hadoop").stop
+      products(hadoop).stop
     }),
 
     "test_flink" -> (() => {
       // try to run Flink
       val seq = Array(
-//        "zookeeper",
-        "hadoop",
-        "kafka",
-        "flink",
-        "data-generator"
+        zookeeper,
+        hadoop,
+        kafka,
+        flink,
+        datagenerator
       )
-      seq.foreach(products(_).start)
+      seq.foreach(x => {products(x).start; println(x + " done ******************")})
 
       Thread sleep TIME_OF_TEST
 
+//      seq.reverse.foreach(products(_).stop)
+    }),
+
+    "stop_all" -> (() => {
+      val seq = Array(
+        zookeeper,
+        hadoop,
+        kafka,
+        flink,
+        spark,
+        storm
+      )
       seq.reverse.foreach(products(_).stop)
     })
   )
@@ -185,9 +220,9 @@ object Main {
     }
   }
 
-  private def getApacheMirror(): String = {
+  private def getApacheMirror: String = {
     val str = Source.fromURL("https://www.apache.org/dyn/closer.cgi").mkString
-    ("""<strong>(.+)</strong>""".r).findFirstMatchIn(str).get.group(1)
+    """<strong>(.+)</strong>""".r.findFirstMatchIn(str).get.group(1)
   }
 
   def pidBySample(sample: String): String = try {

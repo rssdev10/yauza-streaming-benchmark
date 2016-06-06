@@ -50,6 +50,20 @@ task test_data_prepare(type: JavaExec, dependsOn: classes) {
     classpath configurations.runtime
 }
 
+task stop_all(type: JavaExec, dependsOn: classes) {
+    args 'stop_all'
+
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    workingDir("../")
+    main = 'Main'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
 task repl(type:JavaExec) {
     main = "scala.tools.nsc.MainGenericRunner"
     classpath = sourceSets.main.runtimeClasspath
