@@ -38,7 +38,7 @@ public class AvrCounter {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorLong fieldAccessor) {
         KeyedStream<Event, Integer> streamOfNumerics = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).intValue() % App.partNum);
+                .keyBy(event -> fieldAccessor.apply(event).intValue() % FlinkApp.partNum);
 
         WindowedStream<Event, Integer, TimeWindow> windowedStream =
                 streamOfNumerics.timeWindow(Time.seconds(10));
@@ -61,8 +61,8 @@ public class AvrCounter {
                 });
 
         AllWindowedStream<AverageAggregate, TimeWindow> combinedStreamOfAverage =
-                streamOfAverage.timeWindowAll(Time.seconds(App.emergencyTriggerTimeout))
-                        .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(App.partNum)));
+                streamOfAverage.timeWindowAll(Time.seconds(FlinkApp.emergencyTriggerTimeout))
+                        .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(FlinkApp.partNum)));
 
         return combinedStreamOfAverage.fold(new AverageAggregate(),
                 new FoldFunction<AverageAggregate, AverageAggregate>() {

@@ -132,8 +132,8 @@ public class AvrDurationTimeCounter {
 
         AllWindowedStream<AverageAggregate, TimeWindow> winStreamOfAvrIntervals =
                 streamOfAverageIntervals
-                .timeWindowAll(Time.seconds(App.emergencyTriggerTimeout))
-                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(App.partNum)));
+                .timeWindowAll(Time.seconds(FlinkApp.emergencyTriggerTimeout))
+                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(FlinkApp.partNum)));
 
         return winStreamOfAvrIntervals
                 .fold(new AverageAggregate(0, 0), new FoldFunction<AverageAggregate, AverageAggregate>() {

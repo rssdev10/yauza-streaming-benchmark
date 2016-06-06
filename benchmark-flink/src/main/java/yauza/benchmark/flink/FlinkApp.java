@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 
 import yauza.benchmark.common.Event;
 
-public class App {
+public class FlinkApp {
     public static final int partNum = 3;
     public static final int emergencyTriggerTimeout = 3;
 
@@ -33,13 +33,14 @@ public class App {
 
         Properties properties = parameterTool.getProperties();
         DataStream<String> dataStream = env
-                .addSource(new FlinkKafkaConsumer09<String>("topic1", new SimpleStringSchema(), properties));
+                .addSource(new FlinkKafkaConsumer09<String>(parameterTool.get("topic", "yauza_input"),
+                        new SimpleStringSchema(), properties));
 
         Map<String, DataStream<String>> outputStreams = buildTopology(dataStream);
 
         for (Entry<String, DataStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue()
-                    .addSink(new FlinkKafkaProducer09<String>(parameterTool.getRequired("out_" + entry.getKey()),
+                    .addSink(new FlinkKafkaProducer09<String>(parameterTool.get("out_" + entry.getKey(), "out_" + entry.getKey()),
                             new SimpleStringSchema(), parameterTool.getProperties()));
         }
 

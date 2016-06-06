@@ -14,7 +14,7 @@ dependencies {
 
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Main-Class': 'benchmark.flink.App'
+        attributes 'Main-Class': 'benchmark.flink.FlinkApp'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }

@@ -31,7 +31,7 @@ public class UniqItems {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % App.partNum);
+                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % FlinkApp.partNum);
 
         WindowedStream<Event, Integer, TimeWindow> uniqUsersWin = userIdKeyed.timeWindow(Time.seconds(10));
 
@@ -48,8 +48,8 @@ public class UniqItems {
 
         AllWindowedStream<Set<String>, TimeWindow> combinedUniqNumStream =
                 uniqUsers
-                .timeWindowAll(Time.seconds(App.emergencyTriggerTimeout))
-                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(App.partNum)));
+                .timeWindowAll(Time.seconds(FlinkApp.emergencyTriggerTimeout))
+                .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(FlinkApp.partNum)));
 
         return combinedUniqNumStream.fold(0, new FoldFunction<Set<String>, Integer>() {
             private static final long serialVersionUID = 7167358208807786523L;
