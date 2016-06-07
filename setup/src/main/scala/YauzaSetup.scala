@@ -243,6 +243,7 @@ object YauzaSetup {
           | ...
           | """.stripMargin)
     }
+    System.exit(0);
   }
 
   private def getApacheMirror: String = {

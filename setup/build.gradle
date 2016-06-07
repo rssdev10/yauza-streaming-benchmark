@@ -17,7 +17,7 @@ task setup(type: JavaExec, dependsOn: classes) {
     }
 
     workingDir("../")
-    main = 'Main'
+    main = 'YauzaSetup'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
@@ -31,7 +31,7 @@ task test_flink(type: JavaExec, dependsOn: classes) {
     }
 
     workingDir("../")
-    main = 'Main'
+    main = 'YauzaSetup'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
@@ -45,7 +45,7 @@ task test_data_prepare(type: JavaExec, dependsOn: classes) {
     }
 
     workingDir("../")
-    main = 'Main'
+    main = 'YauzaSetup'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
@@ -59,7 +59,7 @@ task stop_all(type: JavaExec, dependsOn: classes) {
     }
 
     workingDir("../")
-    main = 'Main'
+    main = 'YauzaSetup'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
