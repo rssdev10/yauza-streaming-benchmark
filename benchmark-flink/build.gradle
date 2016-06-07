@@ -12,13 +12,35 @@ dependencies {
     //compile 'yauza.benchmark:common-library:0.1'
 }
 
+/*
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Main-Class': 'benchmark.flink.FlinkApp'
+        attributes 'Main-Class': 'yauza.benchmark.flink.FlinkApp'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 
+    destinationDir = new File("./bin/")
+}
+*/
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    }
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'yauza.benchmark.flink.FlinkApp'
+    }
+
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer) {
+        resource = 'reference.conf'
+    }
     destinationDir = new File("./bin/")
 }

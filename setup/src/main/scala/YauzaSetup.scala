@@ -5,7 +5,7 @@ import scala.io.Source
 import scala.language.postfixOps
 import scala.sys.process._
 
-object Main {
+object YauzaSetup {
 
   private val TIME_OF_TEST: Int = 30 * 1000 /* in ms */
 
@@ -20,7 +20,11 @@ object Main {
     val storm = "storm"
     val spark = "spark"
     val hadoop = "hadoop"
+
+    // benchmark
+    val benchmark = "benchmark"
     val datagenerator = "data-generator"
+    val benchmark_flink = "benchmark-flink"
   }
   import Product._
 
@@ -34,7 +38,7 @@ object Main {
     hadoop -> "2.7.2",
 
     // benchmark
-    datagenerator -> "0.1"
+    benchmark -> "0.1"
   ).map {case (k,v) => (k, scala.util.Properties.envOrElse(k, v))}
 
   val products: Map[String, Product] = Map(
@@ -137,19 +141,35 @@ object Main {
 
     datagenerator -> new Product(
       "./bin",
-      s"""data-generator-all-${VER(datagenerator)}.jar""",
+      s"""data-generator-${VER(benchmark)}-all.jar""",
       "") {
       override def start: Unit = {
         s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers localhost:9092""" !
       }
 
       override def stop: Unit = {
+        stopIfNeeded(fileName, benchmark_flink)
       }
 
       override def config: Unit = {
         s"""java -jar $dirName/$fileName --mode generate_file""" !
       }
+    },
+
+    benchmark_flink -> new Product(
+      "./bin",
+      s"""benchmark-flink-${VER(benchmark)}-all.jar""",
+      "") {
+      override def start: Unit = {
+        startIfNeeded(fileName, benchmark_flink, 10, "java",
+          s"""-jar $dirName/$fileName --topic yauza_input --bootstrap.servers localhost:9092""")
+      }
+
+      override def stop: Unit = {
+        stopIfNeeded(fileName, benchmark_flink)
+      }
     }
+
 
   )
 
@@ -183,9 +203,11 @@ object Main {
         hadoop,
         kafka,
         flink,
-        datagenerator
+        datagenerator,
+        benchmark_flink
       )
-      seq.foreach(x => {products(x).start; println(x + " done ******************")})
+      seq.foreach(products(_).start)
+      //seq.foreach(x => {products(x).start; println(x + " done ******************")})
 
       Thread sleep TIME_OF_TEST
 
@@ -199,7 +221,10 @@ object Main {
         kafka,
         flink,
         spark,
-        storm
+        storm,
+
+        datagenerator,
+        benchmark_flink
       )
       seq.reverse.foreach(products(_).stop)
     })
