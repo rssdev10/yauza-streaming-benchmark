@@ -13,6 +13,7 @@ import org.apache.flink.streaming.api.windowing.triggers.ProcessingTimeTrigger;
 import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
+import yauza.benchmark.common.Product;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 import yauza.benchmark.common.Event;
 
@@ -60,6 +61,8 @@ public class UniqItems {
                 return accumulator + value.size();
             }
 
-        }).map(x -> Integer.toString(x));
+        }).map(x -> {
+            return new Product("UniqItems", Integer.toString(x)).toString();
+        });
     }
 }

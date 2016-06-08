@@ -11,6 +11,7 @@ import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Event;
+import yauza.benchmark.common.Product;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 
 /**
@@ -81,6 +82,11 @@ public class AvrCounter {
                 }
                 return accumulator;
             }
-        }).map(x -> "Avr: " + Long.toString(Math.round(x.average)) + "; num: " + Long.toString(x.count));
+        }).map(x -> {
+            return new Product(
+                    "AvrCounter",
+                    "Avr: " + Long.toString(Math.round(x.average)) + "; num: " + Long.toString(x.count))
+                    .toString();
+        });
     }
 }

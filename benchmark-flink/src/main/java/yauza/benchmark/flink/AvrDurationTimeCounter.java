@@ -17,6 +17,7 @@ import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Event;
+import yauza.benchmark.common.Product;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 
@@ -161,6 +162,8 @@ public class AvrDurationTimeCounter {
                         System.out.println(value.toString());
                         return accumulator;
                     }
-                }).map(x -> Long.toString((long) x.average));
+                }).map(x -> {
+                    return new Product("AvrDurationTimeCounter", Long.toString((long) x.average)).toString();
+                });
     }
 }
