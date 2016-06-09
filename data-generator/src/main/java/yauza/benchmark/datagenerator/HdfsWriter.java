@@ -21,7 +21,7 @@ import java.net.URISyntaxException;
  */
 public class HdfsWriter {
     Logger LOG = LoggerFactory.getLogger(HdfsWriter.class);
-    private static final int eventsNum = 100000;
+    private static final int eventsNum = 1000 * 1000 * 10;
 
     private String written = "0";
 
