@@ -7,7 +7,7 @@ import scala.sys.process._
 
 object YauzaSetup {
 
-  private val TIME_OF_TEST: Int = 30 * 1000 /* in ms */
+  private val TIME_OF_TEST: Int = 120 * 1000 /* in ms */
 
   private val apacheMirror = getApacheMirror
 
@@ -144,7 +144,9 @@ object YauzaSetup {
       s"""data-generator-${VER(benchmark)}-all.jar""",
       "") {
       override def start: Unit = {
-        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers localhost:9092""" !
+        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers localhost:9092""" !;
+        println("Data uploaded to kafka")
+        Thread sleep 10000
       }
 
       override def stop: Unit = {
@@ -169,8 +171,6 @@ object YauzaSetup {
         stopIfNeeded(fileName, benchmark_flink)
       }
     }
-
-
   )
 
   val scenario: Map[String, () => Unit] = Map(
