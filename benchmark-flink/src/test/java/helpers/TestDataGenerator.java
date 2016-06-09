@@ -5,7 +5,7 @@ import yauza.benchmark.common.helpers.DummyEvent;
 
 public class TestDataGenerator {
 
-    private static final int eventsNum = 1000;
+    private static final int eventsNum = 1000 * 1000 * 10;
 
     public static class UserEventsProducer implements SourceFunction<String> {
 
@@ -21,9 +21,9 @@ public class TestDataGenerator {
                 // the source runs, isRunning flag should be checked frequently
                 if (element != null)
                     sourceContext.collect(element);
-                // Thread.sleep(100);
+                //Thread.sleep(100);
             }
-            Thread.sleep(15000);
+            Thread.sleep(30 * 1000);
         }
 
         @Override

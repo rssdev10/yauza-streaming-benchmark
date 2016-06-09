@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 
 import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.runtime.messages.TaskManagerMessages;
 import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
@@ -18,6 +19,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Event;
 import yauza.benchmark.common.Product;
+import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 
@@ -34,7 +36,11 @@ public class AvrDurationTimeCounter {
         public long lastTime;
     }
 
-    private static class AverageAggregate {
+    private static class SessionAggregate extends Statistics {
+        Map<String, TimeAggregate> sessions = new HashMap<String, TimeAggregate>();
+    }
+
+    private static class AverageAggregate extends Statistics{
         public double average = 0.0;
         public long min = Long.MAX_VALUE;
         public long max = Long.MIN_VALUE;
@@ -76,16 +82,16 @@ public class AvrDurationTimeCounter {
         WindowedStream<Event, Integer, TimeWindow> timedWindowStream =
                 keyedByIdHash.timeWindow(Time.seconds(10));
 
-        DataStream<Map<String, TimeAggregate>> timeIntervals =
+        DataStream<SessionAggregate> timeIntervals =
                 timedWindowStream.trigger(ProcessingTimeTrigger.create())
-                .fold(new HashMap<String, TimeAggregate>(), new FoldFunction<Event, Map<String, TimeAggregate>>() {
+                .fold(new SessionAggregate(), new FoldFunction<Event, SessionAggregate>() {
                     private static final long serialVersionUID = -4469946090186220007L;
 
                     @Override
-                    public Map<String, TimeAggregate> fold(Map<String, TimeAggregate> accumulator, Event value)
+                    public SessionAggregate fold(SessionAggregate accumulator, Event value)
                             throws Exception {
                         String key = fieldAccessor.apply(value);
-                        TimeAggregate time = accumulator.get(key);
+                        TimeAggregate time = accumulator.sessions.get(key);
                         if (time == null) {
                             time = new TimeAggregate();
                         }
@@ -93,23 +99,26 @@ public class AvrDurationTimeCounter {
                         if (time.firstTime == 0) {
                             time.firstTime = time.lastTime;
                         }
-                        accumulator.put(key, time);
+                        accumulator.sessions.put(key, time);
+
+                        accumulator.registerEvent(value);
+
                         return accumulator;
                     }
                 });
 
         SingleOutputStreamOperator<AverageAggregate> streamOfAverageIntervals = timeIntervals
-                .map(new MapFunction<Map<String, TimeAggregate>, AverageAggregate>() {
+                .map(new MapFunction<SessionAggregate, AverageAggregate>() {
                     private static final long serialVersionUID = -8915051786492935182L;
 
                     @Override
-                    public AverageAggregate map(Map<String, TimeAggregate> value) throws Exception {
+                    public AverageAggregate map(SessionAggregate value) throws Exception {
                         long min = Long.MAX_VALUE;
                         long max = Long.MIN_VALUE;
 
                         double avr = 0;
                         double count = 0;
-                        for (Entry<String, TimeAggregate> entry : value.entrySet()) {
+                        for (Entry<String, TimeAggregate> entry : value.sessions.entrySet()) {
                             long timeInterval = entry.getValue().lastTime - entry.getValue().firstTime;
                             // Check for completed sessions only.
                             // It means that at least two events must exist with different timestamps.
@@ -127,7 +136,11 @@ public class AvrDurationTimeCounter {
                             }
                         }
 
-                        return new AverageAggregate(avr, (long) count, min, max);
+                        AverageAggregate aggregate = new AverageAggregate(avr, (long) count, min, max);
+
+                        aggregate.summarize(value);
+
+                        return aggregate;
                     }
                 });
 
@@ -159,11 +172,16 @@ public class AvrDurationTimeCounter {
                             accumulator.max = value.max;
                         }
 
-                        System.out.println(value.toString());
+                        //System.out.println(value.toString());
+
+                        accumulator.summarize(value);
+
                         return accumulator;
                     }
                 }).map(x -> {
-                    return new Product("AvrDurationTimeCounter", Long.toString((long) x.average)).toString();
+                    Product product = new Product("AvrDurationTimeCounter", Long.toString((long) x.average));
+                    product.setStatistics(x);
+                    return product.toString();
                 });
     }
 }

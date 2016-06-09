@@ -1,5 +1,6 @@
 package yauza.benchmark.flink;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Product;
+import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 import yauza.benchmark.common.Event;
 
@@ -23,6 +25,15 @@ import yauza.benchmark.common.Event;
  *
  */
 public class UniqItems {
+
+    static class UniqAggregator extends Statistics {
+        public Set<String> uniqIds = new HashSet<String>();
+    }
+
+    static class ProductAggregator extends Statistics{
+        public Integer value = 0;
+    }
+
     /**
      * Transform input stream and produce number of unique items
      *
@@ -36,33 +47,43 @@ public class UniqItems {
 
         WindowedStream<Event, Integer, TimeWindow> uniqUsersWin = userIdKeyed.timeWindow(Time.seconds(10));
 
-        DataStream<Set<String>> uniqUsers = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
-                .fold(new HashSet<String>(), new FoldFunction<Event, Set<String>>() {
+        DataStream<UniqAggregator> uniqUsers = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
+                .fold(new UniqAggregator(), new FoldFunction<Event, UniqAggregator>() {
                     private static final long serialVersionUID = -6020094091742548382L;
 
                     @Override
-                    public Set<String> fold(Set<String> accumulator, Event value) throws Exception {
-                        accumulator.add(fieldAccessor.apply(value));
+                    public UniqAggregator fold(UniqAggregator accumulator, Event value) throws Exception {
+                        accumulator.uniqIds.add(fieldAccessor.apply(value));
+
+                        accumulator.registerEvent(value);
+
                         return accumulator;
                     }
                 });
 
-        AllWindowedStream<Set<String>, TimeWindow> combinedUniqNumStream =
+        AllWindowedStream<UniqAggregator, TimeWindow> combinedUniqNumStream =
                 uniqUsers
                 .timeWindowAll(Time.seconds(FlinkApp.emergencyTriggerTimeout))
                 .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(FlinkApp.partNum)));
 
-        return combinedUniqNumStream.fold(0, new FoldFunction<Set<String>, Integer>() {
+        return combinedUniqNumStream.fold(new ProductAggregator(),
+                new FoldFunction<UniqAggregator, ProductAggregator>() {
             private static final long serialVersionUID = 7167358208807786523L;
 
             @Override
-            public Integer fold(Integer accumulator, Set<String> value) throws Exception {
+            public ProductAggregator fold(ProductAggregator accumulator, UniqAggregator value) throws Exception {
                 System.out.println(value.toString());
-                return accumulator + value.size();
+                accumulator.value += value.uniqIds.size();
+
+                accumulator.summarize(value);
+
+                return accumulator;
             }
 
         }).map(x -> {
-            return new Product("UniqItems", Integer.toString(x)).toString();
+            Product product = new Product("UniqItems", Integer.toString(x.value));
+            product.setStatistics(x);
+            return product.toString();
         });
     }
 }

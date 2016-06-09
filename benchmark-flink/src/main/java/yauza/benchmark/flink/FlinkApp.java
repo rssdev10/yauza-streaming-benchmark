@@ -50,7 +50,10 @@ public class FlinkApp {
     public static Map<String, DataStream<String>> buildTopology(DataStream<String> dataStream) {
         HashMap<String, DataStream<String>> result = new HashMap<String, DataStream<String>>();
         DataStream<Event> eventStream = dataStream.map(json -> {
-            return gson.fromJson(json, Event.class);
+            Event event = gson.fromJson(json, Event.class);
+            event.setInputTime();
+            //System.out.print(json);
+            return event;
         });
 
         result.put("uniq_users_number",
@@ -71,7 +74,7 @@ public class FlinkApp {
                 AvrDurationTimeCounter.transform(
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();
-                            return str != null && str.length() > 0;
+                            return str == null || str.isEmpty();
                         }),
                         (event) -> event.getSessionId(),
                         (event) -> event.getUnixtimestamp()

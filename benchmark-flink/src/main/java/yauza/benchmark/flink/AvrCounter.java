@@ -12,6 +12,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 import yauza.benchmark.common.Event;
 import yauza.benchmark.common.Product;
+import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 
 /**
@@ -20,7 +21,7 @@ import yauza.benchmark.common.accessors.FieldAccessorLong;
  *
  */
 public class AvrCounter {
-    private static class AverageAggregate {
+    private static class AverageAggregate extends Statistics {
         public double average = 0.0;
         public long count = 0l;
 
@@ -57,6 +58,9 @@ public class AvrCounter {
                                 accumulator.average * (count / (double)countNext) +
                                 fieldAccessor.apply(event) / (double)countNext;
                         accumulator.count = countNext;
+
+                        accumulator.registerEvent(event);
+
                         return accumulator;
                     }
                 });
@@ -80,13 +84,17 @@ public class AvrCounter {
                             + value.average * (countVal / (double)(countAcc + countVal));
                     accumulator.count = countAcc + countVal;
                 }
+
+                accumulator.summarize(value);
+
                 return accumulator;
             }
         }).map(x -> {
-            return new Product(
+            Product product = new Product(
                     "AvrCounter",
-                    "Avr: " + Long.toString(Math.round(x.average)) + "; num: " + Long.toString(x.count))
-                    .toString();
+                    "Avr: " + Long.toString(Math.round(x.average)) + "; num: " + Long.toString(x.count));
+            product.setStatistics(x);
+            return product.toString();
         });
     }
 }
