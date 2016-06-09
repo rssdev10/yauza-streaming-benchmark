@@ -2,6 +2,7 @@ package yauza.benchmark.common;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
   Class for manipulation with universal event. This class presents absract
@@ -30,6 +31,9 @@ public class Event {
     private String receiptId;
     private String provider;
     private Long price;
+
+    /** actual time of the event arrival */
+    private Long inputTime;
 
     public final String getTimestamp() {
         return timestamp;
@@ -148,5 +152,17 @@ public class Event {
 
     public final void setUnixtimestamp(Long unixtimestamp) {
         this.unixtimestamp = unixtimestamp;
+    }
+
+    public Long getInputTime() {
+        return inputTime;
+    }
+
+    public void setInputTime() {
+        inputTime = new Date().getTime();
+    }
+
+    public void setInputTime(Long inputTime) {
+        this.inputTime = inputTime;
     }
 }
