@@ -74,24 +74,24 @@ object YauzaSetup {
       s"""kafka_${VER(scala_bin)}-${VER(kafka)}.tgz""",
       s"""$apacheMirror/kafka/${VER(kafka)}""") {
       override def start: Unit = {
-        val ZK_CONNECTIONS = "localhost"
+        val ZK_CONNECTIONS = "localhost"//:9092"
         val TOPIC = "yauza_input"
         val PARTITIONS = 1
 
-        startIfNeeded("kafka\\.Kafka", kafka, 10,
+        startIfNeeded("kafka.Kafka", kafka, 10,
           s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
 
-        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper "$ZK_CONNECTIONS" --topic $TOPIC 2>/dev/null""" #| s"grep -c $TOPIC" !
+        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $TOPIC 2>/dev/null""" #| s"grep -c $TOPIC" !
 
         if (count.toInt == 0) {
-          s"""$dirName/bin/kafka-topics.sh --create --zookeeper "$ZK_CONNECTIONS" --replication-factor 1 --partitions $PARTITIONS --topic $TOPIC""" !
+          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $TOPIC""" !
         } else {
           println(s"Kafka topic $TOPIC already exists")
         }
       }
 
       override def stop: Unit = {
-        stopIfNeeded( "kafka\\.Kafka", kafka)
+        stopIfNeeded( "kafka.Kafka", kafka)
         "rm -rf /tmp/kafka-logs/" !
       }
     },
@@ -202,7 +202,7 @@ object YauzaSetup {
         zookeeper,
         hadoop,
         kafka,
-        flink,
+        flink ,
         datagenerator,
         benchmark_flink
       )
