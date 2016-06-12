@@ -1,6 +1,8 @@
 import java.io.File
 import java.net.URL
 
+import yauza.benchmark.flink.ResultsCollector
+
 import scala.io.Source
 import scala.language.postfixOps
 import scala.sys.process._
@@ -203,13 +205,16 @@ object YauzaSetup {
         hadoop,
         kafka,
         flink ,
+
         datagenerator,
+
         benchmark_flink
       )
       seq.foreach(products(_).start)
       //seq.foreach(x => {products(x).start; println(x + " done ******************")})
-
       Thread sleep TIME_OF_TEST
+
+      ResultsCollector.main(Array[String]())
 
 //      seq.reverse.foreach(products(_).stop)
     }),
