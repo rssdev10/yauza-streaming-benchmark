@@ -1,12 +1,9 @@
 package yauza.benchmark.flink
 
-
-import java.util
-import java.util.Properties
+import java.util.{Collections, Properties}
 
 import com.google.gson.Gson
-import kafka.consumer.ConsumerConfig
-import kafka.javaapi.consumer.ConsumerConnector
+import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import yauza.benchmark.common.Product
 
 import scala.collection.mutable.ArrayBuffer
@@ -16,47 +13,6 @@ object ResultsCollector {
 
   @throws[Exception]
   def main(args: Array[String]) {
-/*    val parameterTool: ParameterTool = ParameterTool.fromArgs(args)
-//    if (parameterTool.getNumberOfParameters < 2) {
-//      System.out.println("Missing parameters!\nUsage: Kafka --topic <topic> --bootstrap.servers <kafka brokers>")
-//      System.exit(1)
-//    }
-
-    val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
-    val properties: Properties = parameterTool.getProperties
-//    val dataStream: DataStream[String] = env.addSource(new FlinkKafkaConsumer09[String](parameterTool.get("topic", "yauza_input"), new SimpleStringSchema, properties))
-//    val outputStreams: util.Map[String, DataStream[String]] = buildTopology(dataStream)
-//    for (entry <- outputStreams.entrySet) {
-//      entry.getValue.addSink(new FlinkKafkaProducer09[String](parameterTool.get("out_" + entry.getKey, "out_" + entry.getKey), new SimpleStringSchema, parameterTool.getProperties))
-//    }
-
-    val gson = new Gson()
-
-    val streams: Map[String, DataStream[ArrayBuffer[Product]]] = Array(
-      "uniq_users_number",
-      "uniq_sessions_number",
-      "avr_price",
-      "avr_session_duration"
-    )
-      .map(queue => queue -> env.addSource(new FlinkKafkaConsumer09[String](queue, new SimpleStringSchema, properties))).toMap
-      .mapValues(stream => {
-        stream.map(new MapFunction[String, Product] {
-          override def map(value: String): Product = {
-            gson.fromJson(value, classOf[Product])
-          }
-        }).windowAll(TumblingEventTimeWindows.of(Time.seconds(10)))
-          .trigger(CountTrigger.of(100))
-          .fold(mutable.ArrayBuffer[Product](), new FoldFunction[Product, ArrayBuffer[Product]] {
-            override def fold(accumulator: ArrayBuffer[Product], value: Product): ArrayBuffer[Product] = {
-              accumulator += value
-            }
-          })
-      })
-
-    //streams.tail.fold(streams.head.)
-
-    env.execute()*/
-
     val gson = new Gson()
 
     Array(
@@ -65,6 +21,8 @@ object ResultsCollector {
       "avr_price",
       "avr_session_duration"
     )
+      .par
+      .map(str => "out_" + str) // add common suffix
       .map(queue => {
         val array = new Consumer(queue).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {
@@ -82,32 +40,26 @@ object ResultsCollector {
   }
 
   class Consumer (val topic: String) {
-    val consumer: ConsumerConnector = kafka.consumer.Consumer
-        .createJavaConsumerConnector(createConsumerConfig());
+    val props = new Properties();
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza");
+    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+    props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
+    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.IntegerDeserializer");
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
 
-    def createConsumerConfig(): ConsumerConfig = {
-      val props: Properties = new Properties()
-      props.put("zookeeper.connect", "127.0.0.1:2181");
-//      props.put("group.id", KafkaProperties.groupId);
-      props.put("zookeeper.session.timeout.ms", "400");
-      props.put("zookeeper.sync.time.ms", "200");
-      props.put("auto.commit.interval.ms", "1000");
-
-      return new ConsumerConfig(props);
-    }
-
+    val consumer:KafkaConsumer[Integer, String] = new KafkaConsumer(props);
+    import scala.collection.JavaConversions.asScalaIterator
     def run():ArrayBuffer[Product] = {
       var result = ArrayBuffer[Product]()
-      var topicCountMap = new util.HashMap[String, Integer]()
-      topicCountMap.put(topic, new Integer(1));
-      val consumerMap = consumer.createMessageStreams(topicCountMap);
-      val stream = consumerMap.get(topic).get(0);
+      consumer.subscribe(Collections.singletonList(topic));
+      val records:ConsumerRecords[Integer, String] = consumer.poll(1000);
+      println (s"Reading queue $topic. Found ${records.count()} messages.")
 
-      val it = stream.iterator();
-      while (it.hasNext()) {
-        val message = new String(it.next().message());
-        System.out.println(message);
-        val product = gson.fromJson(message, classOf[Product])
+      for (record:ConsumerRecord[Integer, String] <- records.iterator()) {
+        System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
+        val product = gson.fromJson(record.value(), classOf[Product])
         result += product
       }
       return result
