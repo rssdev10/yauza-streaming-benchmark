@@ -46,7 +46,7 @@ object YauzaSetup {
   val products: Map[String, Product] = Map(
     flink -> new Product(
       s"""flink-${VER(flink)}""",
-      s"""flink-${VER(flink)}-bin-hadoop27-scala_bin_${VER(scala_bin)}.tgz""",
+      s"""flink-${VER(flink)}-bin-hadoop27-scala_${VER(scala_bin)}.tgz""",
       s"""$apacheMirror/flink/flink-${VER(flink)}"""
     ) {
       override def start: Unit = {
