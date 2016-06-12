@@ -124,7 +124,7 @@ object YauzaSetup {
       }
 
       override def config: Unit = {
-        s"""cp -f conf/hadoop $dirName/etc/hadoop""" !;
+        s"""cp -f conf/hadoop/* $dirName/etc/hadoop""" !;
         s"""$dirName/bin/hdfs namenode -format -force""" !
       }
     },
