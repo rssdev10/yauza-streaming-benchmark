@@ -1,7 +1,7 @@
 import java.io.File
 import java.net.URL
 
-import yauza.benchmark.flink.ResultsCollector
+import yauza.benchmark.ResultsCollector
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -124,7 +124,7 @@ object YauzaSetup {
       }
 
       override def config: Unit = {
-        s"""cp -f conf/hadoop $dirName/etc/hadoop""" !;
+        s"""cp -f conf/hadoop/* $dirName/etc/hadoop""" !;
         s"""$dirName/bin/hdfs namenode -format -force""" !
       }
     },
