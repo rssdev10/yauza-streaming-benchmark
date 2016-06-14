@@ -37,6 +37,7 @@ object ResultsCollector {
           acc
         }}
       })
+      .filter(_.totalProcessed > 0)
       .map(experiment => {
         gson.toJson(experiment)
       })
@@ -59,9 +60,18 @@ object ResultsCollector {
 
     def run():ArrayBuffer[Product] = {
       var result = ArrayBuffer[Product]()
-      consumer.subscribe(Collections.singletonList(topic));
+      consumer.subscribe(Collections.singletonList(topic))
 
-      val records:ConsumerRecords[Integer, String] = consumer.poll(1000);
+      var records:ConsumerRecords[Integer, String] = consumer.poll(1000)
+      if (records.count() == 0) {
+        val partitions = consumer.assignment().toArray
+        if (partitions.length > 0) {
+          val partition = partitions(0).asInstanceOf[TopicPartition]
+          consumer.seek(partition, 0)
+          records = consumer.poll(1000)
+        }
+      }
+
       println (s"Reading queue $topic. Found ${records.count()} messages.")
 
       for (record:ConsumerRecord[Integer, String] <- records.iterator()) {
@@ -90,7 +100,7 @@ object ResultsCollector {
   class Experiment(val name:String) {
     var totalTime:Long = _
     var totalProcessed: Long = _
-    var latency:Statistics = _
-    var throughput: Statistics = _
+    var latency:Statistics = new Statistics
+    var throughput: Statistics = new Statistics
   }
 }
