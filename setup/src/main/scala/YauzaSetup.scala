@@ -1,4 +1,4 @@
-import java.io.File
+import java.io.{File, FileWriter}
 import java.net.URL
 
 import yauza.benchmark.ResultsCollector
@@ -12,6 +12,8 @@ object YauzaSetup {
   private val TIME_OF_TEST: Int = 120 * 1000 /* in ms */
 
   private val apacheMirror = getApacheMirror
+
+  private val curDir = System.getProperty("user.dir")
 
   //println("ls -l" !)
   object Product extends Enumeration {
@@ -124,7 +126,13 @@ object YauzaSetup {
       }
 
       override def config: Unit = {
-        s"""cp -f conf/hadoop/* $dirName/etc/hadoop""" !;
+        Process(Seq("bash","-c",s"""cp -f conf/hadoop/* $dirName/etc/hadoop""")).!;
+        val javaHome = System.getenv("JAVA_HOME")
+        if (!javaHome.isEmpty) {
+          val fw = new FileWriter(s"$dirName/etc/hadoop/hadoop-env.sh", true)
+          fw.write(s"\nexport JAVA_HOME=$javaHome\n")
+          fw.close()
+        }
         s"""$dirName/bin/hdfs namenode -format -force""" !
       }
     },
