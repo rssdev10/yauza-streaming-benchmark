@@ -304,7 +304,8 @@ object YauzaSetup {
 
       val file = new File(localFile)
       val exists = file.exists()
-      if (exists && file.length() > 0) {
+      if (exists && file.length() > 1024) {
+        // check minimal size on case of HTTP-redirection with saving of non zero file
         println(s"Using cached File $fileName")
       } else {
         if (exists) file.delete()
