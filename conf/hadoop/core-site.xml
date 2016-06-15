@@ -6,4 +6,10 @@
         <name>fs.defaultFS</name>
         <value>hdfs://localhost:9000</value>
     </property>
+
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/tmp/hadoop-yauza/hdfs-${user.name}</value>
+        <final>true</final>
+    </property>
 </configuration>
