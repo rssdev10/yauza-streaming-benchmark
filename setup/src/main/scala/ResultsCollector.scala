@@ -20,13 +20,13 @@ object ResultsCollector {
     val gson = new Gson()
 
     Array(
-      "uniq_users_number",
-      "uniq_sessions_number",
-      "avr_price",
-      "avr_session_duration"
+      "uniq-users-number",
+      "uniq-sessions-number",
+      "avr-price",
+      "avr-session-duration"
     )
       .par
-      .map(str => "out_" + str) // add common suffix
+      .map(str => "out-" + str) // add common suffix
       .map(queue => {
         val array = new Consumer(queue).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {

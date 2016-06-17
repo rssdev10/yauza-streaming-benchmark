@@ -33,14 +33,14 @@ public class FlinkApp {
 
         Properties properties = parameterTool.getProperties();
         DataStream<String> dataStream = env
-                .addSource(new FlinkKafkaConsumer09<String>(parameterTool.get("topic", "yauza_input"),
+                .addSource(new FlinkKafkaConsumer09<String>(parameterTool.get("topic", "yauza-input"),
                         new SimpleStringSchema(), properties));
 
         Map<String, DataStream<String>> outputStreams = buildTopology(dataStream);
 
         for (Entry<String, DataStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue()
-                    .addSink(new FlinkKafkaProducer09<String>(parameterTool.get("out_" + entry.getKey(), "out_" + entry.getKey()),
+                    .addSink(new FlinkKafkaProducer09<String>(parameterTool.get("out-" + entry.getKey(), "out-" + entry.getKey()),
                             new SimpleStringSchema(), parameterTool.getProperties()));
         }
 
@@ -56,13 +56,13 @@ public class FlinkApp {
             return event;
         });
 
-        result.put("uniq_users_number",
+        result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
 
-        result.put("uniq_sessions_number",
+        result.put("uniq-sessions-number",
                 UniqItems.transform(eventStream, (event) -> event.getSessionId()));
 
-        result.put("avr_price", 
+        result.put("avr-price",
                 AvrCounter.transform(
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();
@@ -70,7 +70,7 @@ public class FlinkApp {
                         }),
                         (event) -> event.getPrice()));
 
-        result.put("avr_session_duration", 
+        result.put("avr-session-duration",
                 AvrDurationTimeCounter.transform(
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();

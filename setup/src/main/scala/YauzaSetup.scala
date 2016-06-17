@@ -15,6 +15,8 @@ object YauzaSetup {
 
   private val curDir = System.getProperty("user.dir")
 
+  private val inputTopic = "yauza-input"
+
   //println("ls -l" !)
   object Product extends Enumeration {
     val flink = "flink"
@@ -79,18 +81,17 @@ object YauzaSetup {
       s"""$apacheMirror/kafka/${VER(kafka)}""") {
       override def start: Unit = {
         val ZK_CONNECTIONS = "localhost"//:9092"
-        val TOPIC = "yauza_input"
         val PARTITIONS = 1
 
         startIfNeeded("kafka.Kafka", kafka, 10,
           s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
 
-        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $TOPIC 2>/dev/null""" #| s"grep -c $TOPIC" !
+        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $inputTopic 2>/dev/null""" #| s"grep -c $inputTopic" !
 
         if (count.toInt == 0) {
-          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $TOPIC""" !
+          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $inputTopic""" !
         } else {
-          println(s"Kafka topic $TOPIC already exists")
+          println(s"Kafka topic $inputTopic already exists")
         }
       }
 
@@ -154,7 +155,7 @@ object YauzaSetup {
       s"""data-generator-${VER(benchmark)}-all.jar""",
       "") {
       override def start: Unit = {
-        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic yauza_input --bootstrap.servers localhost:9092""" !;
+        s"""java -jar $dirName/$fileName --mode load_to_kafka --topic $inputTopic --bootstrap.servers localhost:9092""" !;
         println("Data uploaded to kafka")
         Thread sleep 10000
       }
@@ -174,7 +175,7 @@ object YauzaSetup {
       "") {
       override def start: Unit = {
         startIfNeeded(fileName, benchmark_flink, 10, "java",
-          s"""-jar $dirName/$fileName --topic yauza_input --bootstrap.servers localhost:9092""")
+          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092""")
       }
 
       override def stop: Unit = {
