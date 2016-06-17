@@ -51,7 +51,7 @@ public class Loader {
 
             Properties kafkaProps = parameterTool.getProperties();
             kafkaProps.remove("topic");
-            kafkaProps.remove("load_to_kafka");
+            kafkaProps.remove("mode");
 
             DataStream<String> dataStream = env.readFile(new DataFileInputFormat(filePath), filePath);
             dataStream.addSink(new FlinkKafkaProducer09<>(parameterTool.getRequired("topic"), new SimpleStringSchema(),
