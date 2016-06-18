@@ -32,6 +32,8 @@ public class FlinkApp {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         Properties properties = parameterTool.getProperties();
+        properties.remove("topic"); //removing of all non Kafka properties
+
         DataStream<String> dataStream = env
                 .addSource(new FlinkKafkaConsumer09<String>(parameterTool.get("topic", "yauza-input"),
                         new SimpleStringSchema(), properties));
