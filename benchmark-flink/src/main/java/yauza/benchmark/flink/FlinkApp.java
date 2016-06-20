@@ -25,7 +25,7 @@ public class FlinkApp {
     public static void main(String[] args) throws Exception {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         if (parameterTool.getNumberOfParameters() < 2) {
-            System.out.println("Missing parameters!\nUsage: Kafka --topic <topic> --bootstrap.servers <kafka brokers>");
+            System.out.println("Missing parameters!\nUsage: benchmark-flink... --topic <topic> --bootstrap.servers <kafka brokers>");
             System.exit(1);
         }
 
@@ -43,7 +43,9 @@ public class FlinkApp {
         for (Entry<String, DataStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue()
                     .addSink(new FlinkKafkaProducer09<String>(parameterTool.get("out-" + entry.getKey(), "out-" + entry.getKey()),
-                            new SimpleStringSchema(), parameterTool.getProperties()));
+                            new SimpleStringSchema(), properties));
+
+            entry.getValue().print();
         }
 
         env.execute();
@@ -54,7 +56,7 @@ public class FlinkApp {
         DataStream<Event> eventStream = dataStream.map(json -> {
             Event event = gson.fromJson(json, Event.class);
             event.setInputTime();
-            //System.out.print(json);
+//            System.out.print(json);
             return event;
         });
 
