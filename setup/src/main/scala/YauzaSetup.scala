@@ -238,7 +238,7 @@ object YauzaSetup {
 
       Thread sleep TIME_OF_TEST
 
-      product(benchmark_flink).stop
+      products(benchmark_flink).stop
 
       ResultsCollector.main(Array[String]())
 
