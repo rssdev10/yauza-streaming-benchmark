@@ -1,5 +1,6 @@
 import java.io.{File, FileWriter}
 import java.net.URL
+import java.util.Calendar
 
 import yauza.benchmark.ResultsCollector
 
@@ -26,6 +27,8 @@ object YauzaSetup {
     val storm = "storm"
     val spark = "spark"
     val hadoop = "hadoop"
+
+    val delay = "delay"
 
     // benchmark
     val benchmark = "benchmark"
@@ -181,6 +184,12 @@ object YauzaSetup {
       override def stop: Unit = {
         stopIfNeeded(fileName, benchmark_flink)
       }
+    },
+
+    delay -> new Product(delay, "", "") {
+      override def start: Unit = {
+        Thread sleep 30 * 1000
+      }
     }
   )
 
@@ -213,15 +222,23 @@ object YauzaSetup {
         zookeeper,
         hadoop,
         kafka,
-        flink ,
+        flink,
+
+        delay,
 
         datagenerator,
 
         benchmark_flink
       )
-      seq.foreach(products(_).start)
-      //seq.foreach(x => {products(x).start; println(x + " done ******************")})
+      //seq.foreach(products(_).start)
+      seq.foreach(x => {
+        println(Calendar.getInstance.getTime + ": " + x + " starting ******************")
+        products(x).start
+      })
+
       Thread sleep TIME_OF_TEST
+
+      product(benchmark_flink).stop
 
       ResultsCollector.main(Array[String]())
 
@@ -285,7 +302,9 @@ object YauzaSetup {
     val pid = pidBySample(sample)
     if (pid.nonEmpty) {
       s"""kill $pid""".run()
-        Thread sleep 1000
+
+      Thread sleep 1000
+
       val again = pidBySample(sample)
       if (again.nonEmpty) {
         s"""kill -9 $pid""".run()
@@ -321,7 +340,7 @@ object YauzaSetup {
 
     def config : Unit = {}
 
-    def start : Unit
-    def stop : Unit
+    def start : Unit = {}
+    def stop : Unit = {}
   }
 }
