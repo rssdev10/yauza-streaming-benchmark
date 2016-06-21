@@ -10,7 +10,8 @@ dependencies{
     compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka}"
 }
 
-task setup(type: JavaExec, dependsOn: classes) {
+task setup(type: JavaExec,
+           dependsOn: [classes, ":data-generator:shadowJar", ":benchmark-flink:shadowJar"]) {
     args 'setup'
 
     // copy versions of packages

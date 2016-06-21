@@ -129,7 +129,7 @@ object YauzaSetup {
         s"""$dirName/sbin/stop-dfs.sh""" !
       }
 
-      override def config: Unit = {
+      override def config(phase:String): Unit = {
         Process(Seq("bash","-c",s"""cp -f conf/hadoop/* $dirName/etc/hadoop""")).!;
         val javaHome = System.getenv("JAVA_HOME")
         if (!javaHome.isEmpty) {
@@ -167,7 +167,9 @@ object YauzaSetup {
         stopIfNeeded(fileName, benchmark_flink)
       }
 
-      override def config: Unit = {
+      override def config(phase:String): Unit = {
+        if (!phase.equalsIgnoreCase("prepare")) return
+
         s"""java -jar $dirName/$fileName --mode generate_file""" !
       }
     },
@@ -200,7 +202,7 @@ object YauzaSetup {
       products.foreach { case (k, v) => if (v.urlPath.nonEmpty) v.downloadAndUntar() }
       products.foreach { case (k, v) =>
         try {
-          v.config
+          v.config("setup")
         } catch {
           case _: Throwable =>
         }
@@ -208,10 +210,10 @@ object YauzaSetup {
     }),
 
     "test_data_prepare" -> (() => {
-      products(hadoop).config
+      products(hadoop).config("prepare")
       products(hadoop).start
 
-      products(datagenerator).config
+      products(datagenerator).config("prepare")
 
       products(hadoop).stop
     }),
@@ -338,7 +340,7 @@ object YauzaSetup {
       tar !
     }
 
-    def config : Unit = {}
+    def config(phase:String) : Unit = {}
 
     def start : Unit = {}
     def stop : Unit = {}
