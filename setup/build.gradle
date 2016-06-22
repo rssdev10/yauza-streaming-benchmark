@@ -11,7 +11,10 @@ dependencies{
 }
 
 task setup(type: JavaExec,
-           dependsOn: [classes, ":data-generator:shadowJar", ":benchmark-flink:shadowJar"]) {
+           dependsOn: [classes,
+                       ":data-generator:shadowJar",
+                       ":benchmark-flink:shadowJar",
+                       ":benchmark-spark:shadowJar"]) {
     args 'setup'
 
     // copy versions of packages

@@ -1,7 +1,9 @@
 rootProject.name = 'yauza-streaming-benchmark'
 
-include ':common-library', 'benchmark-flink'
 include ':common-library', 'data-generator'
+
+include ':common-library', 'benchmark-flink'
+include ':common-library', 'benchmark-spark'
 
 include ':setup'
 
