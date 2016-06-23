@@ -70,11 +70,13 @@ object YauzaSetup {
       s"""spark-${VER(spark)}-bin-hadoop2.6.tgz""",
       s"""$apacheMirror/spark/spark-${VER(spark)}""") {
       override def start: Unit = {
-
+        startIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster", 5, s"""$dirName/sbin/start-master.sh -h localhost -p 7077""")
+        startIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave", 5, s"""$dirName/sbin/start-slave.sh spark://localhost:7077""")
       }
 
       override def stop: Unit = {
-
+        stopIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster")
+        stopIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave")
       }
     },
 
