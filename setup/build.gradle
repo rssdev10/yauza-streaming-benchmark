@@ -7,7 +7,7 @@ dependencies{
     compile "org.scala-lang:scala-library:" + ver.'scala-lib'
     runtime "org.scala-lang:scala-compiler:" + ver.'scala-lib'
 
-    compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka9}"
+    compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka8}"
 }
 
 task setup(type: JavaExec,

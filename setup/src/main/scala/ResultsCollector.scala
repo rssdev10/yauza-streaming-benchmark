@@ -1,9 +1,10 @@
 package yauza.benchmark
 
 import java.util
-import java.util.{Collections, Properties}
+import java.util.{Collections, Date, Properties}
 
 import com.google.gson.Gson
+import kafka.consumer.KafkaStream
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import yauza.benchmark.common.Product
@@ -47,38 +48,71 @@ object ResultsCollector {
   class Consumer (val topic: String) {
     val props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza");
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza2");
     //props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
     props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
-    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
-    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.IntegerDeserializer");
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+    // kafka 9, 10
+//    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+//    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+    // kafka 8
+    props.put("session.timeout.ms", "30000");
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "smallest");
+    props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "range");
+    props.put("zookeeper.connect", "localhost:2181");
 
     val consumer:KafkaConsumer[Integer, String] = new KafkaConsumer(props);
 
     def run():ArrayBuffer[Product] = {
       var result = ArrayBuffer[Product]()
-      consumer.subscribe(Collections.singletonList(topic))
+//      // Kafka 9
+//      consumer.subscribe(Collections.singletonList(topic))
+//
+//      var records:ConsumerRecords[Integer, String] = consumer.poll(1000)
+//      if (records.count() == 0) {
+//        val partitions = consumer.assignment().toArray
+//        if (partitions.length > 0) {
+//          val partition = partitions(0).asInstanceOf[TopicPartition]
+//          consumer.seek(partition, 0)
+//          records = consumer.poll(1000)
+//        }
+//      }
+//
+//      println (s"Reading queue $topic. Found ${records.count()} messages.")
+//
+//      for (record:ConsumerRecord[Integer, String] <- records.iterator()) {
+//        System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
+//        val product = gson.fromJson(record.value(), classOf[Product])
+//        result += product
+//      }
 
-      var records:ConsumerRecords[Integer, String] = consumer.poll(1000)
-      if (records.count() == 0) {
-        val partitions = consumer.assignment().toArray
-        if (partitions.length > 0) {
-          val partition = partitions(0).asInstanceOf[TopicPartition]
-          consumer.seek(partition, 0)
-          records = consumer.poll(1000)
+      // Kafka 8
+      val consumerStream = kafka.consumer.Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(props))
+      val topicCountMap = new util.HashMap[String, Integer]()
+      topicCountMap.put(topic, new Integer(1))
+      val consumerMap = consumerStream.createMessageStreams(topicCountMap)
+
+      new Thread(new Runnable() {
+        override def run(): Unit = {
+          Thread sleep 5000
+          consumerStream.shutdown()
         }
+      }).start
+
+      val stream = consumerMap.get(topic).get(0)
+      val it = stream.iterator()
+
+      while (it.hasNext()) {
+        val message = new String(it.next().message())
+        System.out.println(message)
+//        val product = gson.fromJson(message, classOf[Product])
+//        result += product
       }
 
-      println (s"Reading queue $topic. Found ${records.count()} messages.")
-
-      for (record:ConsumerRecord[Integer, String] <- records.iterator()) {
-        System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
-        val product = gson.fromJson(record.value(), classOf[Product])
-        result += product
-      }
       return result
     }
   }

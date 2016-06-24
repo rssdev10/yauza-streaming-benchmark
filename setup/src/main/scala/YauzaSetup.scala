@@ -182,7 +182,9 @@ object YauzaSetup {
       "") {
       override def start: Unit = {
         startIfNeeded(fileName, benchmark_flink, 10, "java",
-          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092""")
+//          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092"""
+          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092 --zookeeper.connect localhost:2181 --group.id yauza""" //kafka 8
+        )
       }
 
       override def stop: Unit = {
@@ -295,7 +297,7 @@ object YauzaSetup {
   def startIfNeeded(sample: String, name: String, sleepTime:Integer, args: String*): Unit = {
     val pid = pidBySample(sample)
     if (pid.nonEmpty) {
-      println( name + "is already running...")
+      println( name + " is already running...")
     } else {
       args.mkString(" ").run()
       Thread sleep(sleepTime * 1000)

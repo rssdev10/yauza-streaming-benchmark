@@ -8,8 +8,10 @@ import java.util.Properties;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer09;
+//import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09;
+//import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer09;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 import com.google.gson.Gson;
@@ -34,18 +36,21 @@ public class FlinkApp {
         Properties properties = parameterTool.getProperties();
         properties.remove("topic"); //removing of all non Kafka properties
 
+        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
         DataStream<String> dataStream = env
-                .addSource(new FlinkKafkaConsumer09<String>(parameterTool.get("topic", "yauza-input"),
+                .addSource(new FlinkKafkaConsumer08<String>(parameterTool.get("topic", "yauza-input"),
                         new SimpleStringSchema(), properties));
 
         Map<String, DataStream<String>> outputStreams = buildTopology(dataStream);
 
         for (Entry<String, DataStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue()
-                    .addSink(new FlinkKafkaProducer09<String>(parameterTool.get("out-" + entry.getKey(), "out-" + entry.getKey()),
+                    .addSink(new FlinkKafkaProducer08<String>(parameterTool.get("out-" + entry.getKey(), "out-" + entry.getKey()),
                             new SimpleStringSchema(), properties));
 
-            entry.getValue().print();
+            //entry.getValue().print();
         }
 
         env.execute();

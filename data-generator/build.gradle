@@ -6,7 +6,7 @@
 dependencies {
     compile "org.apache.flink:flink-java:${ver.flink}"
     compile "org.apache.flink:flink-streaming-java_${ver.scala}:${ver.flink}"
-    compile "org.apache.flink:flink-connector-kafka-${major(ver.kafka9)}_${ver.scala}:${ver.flink}"
+    compile "org.apache.flink:flink-connector-kafka-${major(ver.kafka8)}_${ver.scala}:${ver.flink}"
 
     compile 'org.apache.hadoop:hadoop-hdfs:2.7.2'
     compile 'org.apache.hadoop:hadoop-common:2.7.2'
