@@ -32,7 +32,7 @@ object ResultsCollector {
         val array = new Consumer(queue).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {
           acc.latency.addValue(item.getLatency)
-          acc.throughput.addValue(item.getProcessedEvents / (item.getProcessingTime / 1000))
+          acc.throughput.addValue((item.getProcessedEvents / (item.getProcessingTime / 1000.0)).toInt)
           acc.totalProcessed = acc.totalProcessed + item.getProcessedEvents
           acc.totalTime = acc.totalTime + item.getProcessingTime / 1000
           acc
@@ -48,7 +48,8 @@ object ResultsCollector {
   class Consumer (val topic: String) {
     val props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza2");
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza"
+      + scala.util.Random.nextInt(1000).toString); //debug feature to avoid seek operaion
     //props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
     props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
@@ -109,8 +110,8 @@ object ResultsCollector {
       while (it.hasNext()) {
         val message = new String(it.next().message())
         System.out.println(message)
-//        val product = gson.fromJson(message, classOf[Product])
-//        result += product
+        val product = gson.fromJson(message, classOf[Product])
+        result += product
       }
 
       return result
