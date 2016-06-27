@@ -16,6 +16,7 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 import com.google.gson.Gson;
 
+import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
 public class FlinkApp {
@@ -26,29 +27,40 @@ public class FlinkApp {
 
     public static void main(String[] args) throws Exception {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
-        if (parameterTool.getNumberOfParameters() < 2) {
-            System.out.println("Missing parameters!\nUsage: benchmark-flink... --topic <topic> --bootstrap.servers <kafka brokers>");
+        String confFilename = parameterTool.get("config");
+
+        if (confFilename == null && parameterTool.getNumberOfParameters() < 2) {
+            System.out.println("Missing parameters!\n"
+                    + "Usage: benchmark-flink... --kafka.topic.input <topic> --bootstrap.servers <kafka brokers>"
+                    + "\t or benchmark-flink --config <filename>");
             System.exit(1);
         }
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        Properties properties = parameterTool.getProperties();
-        properties.remove("topic"); //removing of all non Kafka properties
+        Config config;
+        if (confFilename != null) {
+            config = new Config(confFilename);
+        } else {
+            config = new Config(parameterTool.getProperties());
+        }
 
-        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        Properties kafkaProps = config.getKafkaProperties();
 
         DataStream<String> dataStream = env
-                .addSource(new FlinkKafkaConsumer08<String>(parameterTool.get("topic", "yauza-input"),
-                        new SimpleStringSchema(), properties));
+                .addSource(new FlinkKafkaConsumer08<String>(
+                        config.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME),
+                        new SimpleStringSchema(), kafkaProps));
 
         Map<String, DataStream<String>> outputStreams = buildTopology(dataStream);
 
         for (Entry<String, DataStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue()
-                    .addSink(new FlinkKafkaProducer08<String>(parameterTool.get("out-" + entry.getKey(), "out-" + entry.getKey()),
-                            new SimpleStringSchema(), properties));
+                    .addSink(new FlinkKafkaProducer08<String>(
+                            config.getProperty(
+                                    Config.OUTPUT_TOPIC_PROP_NAME_PREFIX + entry.getKey(),
+                                    Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey()),
+                            new SimpleStringSchema(), kafkaProps));
 
             //entry.getValue().print();
         }

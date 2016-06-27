@@ -3,6 +3,7 @@ import java.net.URL
 import java.util.Calendar
 
 import yauza.benchmark.ResultsCollector
+import yauza.benchmark.common.Config
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -16,7 +17,9 @@ object YauzaSetup {
 
   private val curDir = System.getProperty("user.dir")
 
-  private val inputTopic = "yauza-input"
+  private val props = new Config("conf/benchmark.conf")
+
+  private val inputTopic = Config.INPUT_TOPIC_NAME
 
   //println("ls -l" !)
   object Product extends Enumeration {
@@ -85,7 +88,7 @@ object YauzaSetup {
       s"""kafka_${VER(scala_bin)}-${VER(kafka)}.tgz""",
       s"""$apacheMirror/kafka/${VER(kafka)}""") {
       override def start: Unit = {
-        val ZK_CONNECTIONS = "localhost"//:9092"
+        val ZK_CONNECTIONS = props.getProperties.getProperty(Config.PROP_ZOOKEEPER)
         val PARTITIONS = 1
 
         startIfNeeded("kafka.Kafka", kafka, 10,
@@ -181,9 +184,9 @@ object YauzaSetup {
       s"""benchmark-flink-${VER(benchmark)}-all.jar""",
       "") {
       override def start: Unit = {
-        startIfNeeded(fileName, benchmark_flink, 10, "java",
-//          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092"""
-          s"""-jar $dirName/$fileName --topic $inputTopic --bootstrap.servers localhost:9092 --zookeeper.connect localhost:2181 --group.id yauza""" //kafka 8
+        startIfNeeded(fileName, benchmark_flink, 10,
+          products(flink).dirName + "/bin/flink",
+          s"""run $dirName/$fileName --config conf/benchmark.conf"""
         )
       }
 
@@ -246,6 +249,7 @@ object YauzaSetup {
 
       products(benchmark_flink).stop
 
+      println(Calendar.getInstance.getTime + ": " + " Processing of results starting ******************")
       ResultsCollector.main(Array[String]())
 
 //      seq.reverse.foreach(products(_).stop)
@@ -340,7 +344,7 @@ object YauzaSetup {
         new URL(url) #> new File(localFile) !
       }
 
-      val tar = "tar -xzvf " + System.getProperty("user.dir") + "/" + localFile
+      val tar = "tar -xzvf " + curDir + "/" + localFile
       tar !
     }
 
