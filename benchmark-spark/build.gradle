@@ -6,7 +6,7 @@
 dependencies {
     compile "org.apache.spark:spark-core_${ver.scala}:${ver.spark}"
     compile "org.apache.spark:spark-streaming_${ver.scala}:${ver.spark}"
-    compile "org.apache.spark:spark-streaming-kafka_${ver.scala}:${ver.spark}"
+    compile "org.apache.spark:spark-streaming-kafka-0-8_${ver.scala}:${ver.spark}"
 
     compile "commons-cli:commons-cli:${ver.'commons-cli'}"
     //compile "org.scala-lang:scala-library:" + ver.'scala-lib'

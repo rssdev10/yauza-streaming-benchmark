@@ -32,6 +32,7 @@ public class LocalSparkTest {
         assertTrue(outputStreams.size() > 0);
 
         jssc.start();
-        jssc.awaitTermination(30 * 1000);
+        // jssc.awaitTermination(30 * 1000); // <=1.6
+        jssc.awaitTerminationOrTimeout(30 * 1000); // >=2.0
     }
 }
