@@ -8,6 +8,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import yauza.benchmark.common.Config;
 
 import java.util.Properties;
 
@@ -21,15 +22,25 @@ public class Loader {
     public static void main(final String[] args) throws Exception {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
-        String hdfsPath = parameterTool.get("hdfs", "hdfs://localhost:9000");
-        String dataFile = parameterTool.get("datafile", "/yauza-benchmark/datafile.json");
-
         if (parameterTool.getNumberOfParameters() < 1) {
             printHelpMessage();
             System.exit(1);
         }
 
+        String confFilename = parameterTool.get("config");
+        Config config;
+        if (confFilename != null && !confFilename.isEmpty()) {
+            config = new Config(confFilename);
+        } else {
+            config = new Config(parameterTool.getProperties());
+        }
+
+        String hdfsPath = config.getProperties().getProperty("hdfs", "hdfs://localhost:9000");
+        String dataFile = config.getProperties().getProperty("datafile", "/yauza-benchmark/datafile.json");
+
+        // read from command line !
         String mode = parameterTool.get("mode", "");
+
         if (mode.equals("generate_file")) {
             // generate data and write into HDFS
             new HdfsWriter().generate(hdfsPath, dataFile);
@@ -39,11 +50,7 @@ public class Loader {
 
             String filePath = hdfsPath + dataFile;
 
-            Properties kafkaProps = parameterTool.getProperties();
-            kafkaProps.remove("topic");
-            kafkaProps.remove("mode");
-            kafkaProps.remove("hdfs");
-            kafkaProps.remove("datafile");
+            Properties kafkaProps = config.getKafkaProperties();
 
             DataStream<String> dataStream = env.readFile(new DataFileInputFormat(filePath), filePath);
 //            dataStream.addSink(new FlinkKafkaProducer09<>(parameterTool.getRequired("topic"), new SimpleStringSchema(),
