@@ -15,7 +15,10 @@ public class Config {
     public static final String PROP_BOOTSTRAP_SERVERS = "bootstrap.servers";
     public static final String PROP_ZOOKEEPER = "zookeeper.connect";
 
-    private Properties properties;
+    private Properties properties = null;
+
+    public Config() {
+    }
 
     public Config(String fileName) {
         properties = new Properties();
@@ -48,8 +51,10 @@ public class Config {
     public Properties getKafkaProperties() {
         Properties kafkaProperties = new Properties();
 
-        copyPropertyValue(kafkaProperties, PROP_BOOTSTRAP_SERVERS, "localhost:9092");
-        copyPropertyValue(kafkaProperties, PROP_ZOOKEEPER, "localhost:2181");
+        if (properties != null) {
+            copyPropertyValue(kafkaProperties, PROP_BOOTSTRAP_SERVERS, "localhost:9092");
+            copyPropertyValue(kafkaProperties, PROP_ZOOKEEPER, "localhost:2181");
+        }
 
         kafkaProperties.put("group.id", properties.getProperty("kafka.group.id", "yauza"));
 
