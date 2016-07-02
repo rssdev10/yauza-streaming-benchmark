@@ -1,8 +1,10 @@
 package yauza.benchmark.common;
 
+import java.io.Serializable;
+
 /**
  */
-public class Statistics {
+public class Statistics implements Serializable {
     public long firstTime;
     public long lastTime;
     public long count;
