@@ -37,6 +37,8 @@ object YauzaSetup {
     val benchmark = "benchmark"
     val datagenerator = "data-generator"
     val benchmark_flink = "benchmark-flink"
+
+    val results_collector = "processing of results"
   }
   import Product._
 
@@ -199,6 +201,13 @@ object YauzaSetup {
       override def start: Unit = {
         Thread sleep 30 * 1000
       }
+    },
+
+    results_collector -> new Product(
+      "", "", "") {
+      override def start: Unit = {
+        ResultsCollector.main(Array[String]())
+      }
     }
   )
 
@@ -239,20 +248,15 @@ object YauzaSetup {
 
         benchmark_flink
       )
-      //seq.foreach(products(_).start)
-      seq.foreach(x => {
-        println(Calendar.getInstance.getTime + ": " + x + " starting ******************")
-        products(x).start
-      })
+
+      start(seq)
 
       Thread sleep TIME_OF_TEST
-
       products(benchmark_flink).stop
 
-      println(Calendar.getInstance.getTime + ": " + " Processing of results starting ******************")
-      ResultsCollector.main(Array[String]())
+      start(Seq(results_collector))
 
-//      seq.reverse.foreach(products(_).stop)
+      stop(seq.filter(x => x != benchmark_flink))
     }),
 
     "stop_all" -> (() => {
@@ -322,6 +326,17 @@ object YauzaSetup {
     } else {
       println("No $name instance found to stop")
     }
+  }
+
+  def start(seq: Seq[String]) = {
+    seq.foreach(x => {
+      println(Calendar.getInstance.getTime + ": " + x + " starting ******************")
+      products(x).start
+    })
+  }
+
+  def stop(seq: Seq[String]) = {
+    seq.reverse.foreach(products(_).stop)
   }
 
   abstract class Product(val dirName: String, val fileName: String, val urlPath: String){
