@@ -28,9 +28,7 @@ public class UniqItems {
 
     static class UniqAggregator extends Statistics {
         public Set<String> uniqIds = new HashSet<String>();
-    }
 
-    static class ProductAggregator extends Statistics {
         public Integer value = 0;
     }
 
@@ -56,6 +54,7 @@ public class UniqItems {
                         accumulator.registerEvent(value);
                     }
                 });
+                accumulator.value = accumulator.uniqIds.size();
 
                 List<UniqAggregator> list = Arrays.asList(accumulator);
                 return list.iterator();
@@ -63,20 +62,12 @@ public class UniqItems {
         });
 
         return uniques
-                .map(x -> new Tuple2<UniqAggregator, ProductAggregator>(x, null))
                 .reduce((x1, x2) -> {
-                    ProductAggregator accumulator = x1._2;
-                    if (accumulator == null) {
-                        accumulator = new ProductAggregator();
-                    }
-                    accumulator.value += x2._1.uniqIds.size();
+                    x1.value += x2.value;
 
-                    accumulator.summarize(x2._1);
-
-                    return new Tuple2<>(null, accumulator);
+                    return x1;
                 })
-                .map(x -> {
-                    ProductAggregator aggregator = x._2;
+                .map(aggregator -> {
                     Product product = new Product("UniqItems", aggregator.toString());
                     product.setStatistics(aggregator);
                     return product.toString();
