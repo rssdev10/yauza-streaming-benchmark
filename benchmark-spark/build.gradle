@@ -10,6 +10,8 @@ dependencies {
 
     compile "commons-cli:commons-cli:${ver.'commons-cli'}"
     //compile "org.scala-lang:scala-library:" + ver.'scala-lib'
+
+    compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka8}"
 }
 
 /*

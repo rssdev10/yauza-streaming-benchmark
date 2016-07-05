@@ -1,6 +1,7 @@
 package yauza.benchmark.spark;
 
 import com.google.gson.Gson;
+import kafka.serializer.StringDecoder;
 import org.apache.commons.cli.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -8,18 +9,19 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.Milliseconds;
+import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import scala.Tuple2;
+import scala.Tuple3;
 import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public class SparkBenchmark {
     public static final int partNum = 3;
@@ -73,6 +75,7 @@ public class SparkBenchmark {
 
         String topicList = kafkaProps.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME);
         String zooServers = kafkaProps.getProperty(Config.PROP_ZOOKEEPER, "localhost:2181");
+        String bootstrapServers = kafkaProps.getProperty(Config.PROP_BOOTSTRAP_SERVERS, "localhost:9092");
 
         SparkConf sparkConf = new SparkConf()
                 .setAppName("BenchmarkSpark")
@@ -80,16 +83,37 @@ public class SparkBenchmark {
 //                .setMaster(spark);
 
         // Create the context with 10 seconds batch size
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(10 * 1000));
+        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Milliseconds.apply(5000));
 
+        jssc.checkpoint("_checkpoint");
+
+        // see: http://spark.apache.org/docs/latest/streaming-kafka-integration.html
+/*
         Map<String, Integer> topicMap = new HashMap<String, Integer>();
         String[] topics = topicList.split(",");
         for (String topic: topics) {
             topicMap.put(topic, numThreads);
         }
-
         JavaPairReceiverInputDStream<String, String> messages =
                 KafkaUtils.createStream(jssc, zooServers, "yauza", topicMap);
+*/
+
+        Set<String> topicMap = new HashSet<>(Arrays.asList(topicList.split(",")));
+        Map<String, String> kafkaParams = new HashMap<String, String>() {
+            {
+                put("metadata.broker.list", bootstrapServers);
+                put("auto.offset.reset", "smallest");
+            }
+        };
+
+        JavaPairInputDStream<String, String> messages =
+                KafkaUtils.createDirectStream(jssc,
+                        String.class,
+                        String.class,
+                        StringDecoder.class,
+                        StringDecoder.class,
+                        kafkaParams,
+                        topicMap);
 
         JavaDStream<String> jsons = messages.map(new Function<Tuple2<String, String>, String>() {
             @Override
@@ -134,7 +158,7 @@ public class SparkBenchmark {
             event.setInputTime();
             //System.out.print(json);
             return event;
-        });
+        }).window(Seconds.apply(10));
 
         result.put("uniq_users_number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
