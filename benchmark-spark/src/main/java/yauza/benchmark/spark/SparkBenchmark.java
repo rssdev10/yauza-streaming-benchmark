@@ -115,14 +115,7 @@ public class SparkBenchmark {
                         kafkaParams,
                         topicMap);
 
-        JavaDStream<String> jsons = messages.map(new Function<Tuple2<String, String>, String>() {
-            @Override
-            public String call(Tuple2<String, String> tuple2) {
-                return tuple2._2();
-            }
-        });
-
-        Map<String, JavaDStream<String>> outputStreams = buildTopology(jsons);
+        Map<String, JavaDStream<String>> outputStreams = buildTopology(messages);
 
         for (Map.Entry<String, JavaDStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue().print();
@@ -150,11 +143,11 @@ public class SparkBenchmark {
         jssc.awaitTermination();
     }
 
-    public static Map<String, JavaDStream<String>> buildTopology(JavaDStream<String> dataStream) {
+    public static Map<String, JavaDStream<String>> buildTopology(JavaPairInputDStream<String, String> dataStream) {
         HashMap<String, JavaDStream<String>> result = new HashMap<String, JavaDStream<String>>();
 
-        JavaDStream<Event> eventStream = dataStream.map(json -> {
-            Event event = gson.fromJson(json, Event.class);
+        JavaDStream<Event> eventStream = dataStream.map(message -> {
+            Event event = gson.fromJson(message._2(), Event.class);
             event.setInputTime();
             //System.out.print(json);
             return event;
