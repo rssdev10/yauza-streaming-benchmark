@@ -79,6 +79,10 @@ public class SparkBenchmark {
 
         SparkConf sparkConf = new SparkConf()
                 .setAppName("BenchmarkSpark")
+                .set("spark.streaming.backpressure.enabled","true")
+                // uncomment it to set phisical limit of processing
+                // .set("spark.streaming.receiver.maxRate", "10000")
+                // .set("spark.streaming.kafka.maxRatePerPartition", "10000")
                 .setMaster("local");
 //                .setMaster(spark);
 
