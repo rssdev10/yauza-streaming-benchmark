@@ -80,16 +80,16 @@ public class SparkBenchmark {
         SparkConf sparkConf = new SparkConf()
                 .setAppName("BenchmarkSpark")
                 .set("spark.streaming.backpressure.enabled","true")
-                // uncomment it to set phisical limit of processing
-                // .set("spark.streaming.receiver.maxRate", "10000")
-                // .set("spark.streaming.kafka.maxRatePerPartition", "10000")
+                // physical limit of processing speed
+                .set("spark.streaming.receiver.maxRate", config.getProperty("spark.streaming.receiver.maxRate", "0"))
+                .set("spark.streaming.kafka.maxRatePerPartition", config.getProperty("spark.streaming.kafka.maxRatePerPartition", "0"))
                 .setMaster("local");
 //                .setMaster(spark);
 
         // Create the context with 10 seconds batch size
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Milliseconds.apply(5000));
 
-        jssc.checkpoint("_checkpoint");
+        //jssc.checkpoint("_checkpoint");
 
         // see: http://spark.apache.org/docs/latest/streaming-kafka-integration.html
 /*
