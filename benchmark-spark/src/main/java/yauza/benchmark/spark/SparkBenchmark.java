@@ -3,12 +3,8 @@ package yauza.benchmark.spark;
 import com.google.gson.Gson;
 import kafka.serializer.StringDecoder;
 import org.apache.commons.cli.*;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.streaming.Duration;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.streaming.Milliseconds;
 import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -16,8 +12,6 @@ import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
-import scala.Tuple2;
-import scala.Tuple3;
 import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
@@ -29,7 +23,7 @@ public class SparkBenchmark {
 
     private static Gson gson = new Gson(); 
 
-    public static void main(String[] args) throws Exception {
+    public static <T> void main(String[] args) throws Exception {
         Options opts = new Options();
         OptionGroup group = new OptionGroup();
         group.addOption(new Option("topic", Config.INPUT_TOPIC_PROP_NAME, true, "Input topic name. <topic1, topic2>"));
@@ -92,21 +86,20 @@ public class SparkBenchmark {
         //jssc.checkpoint("_checkpoint");
 
         // see: http://spark.apache.org/docs/latest/streaming-kafka-integration.html
-/*
-        Map<String, Integer> topicMap = new HashMap<String, Integer>();
-        String[] topics = topicList.split(",");
-        for (String topic: topics) {
-            topicMap.put(topic, numThreads);
-        }
-        JavaPairReceiverInputDStream<String, String> messages =
-                KafkaUtils.createStream(jssc, zooServers, "yauza", topicMap);
-*/
+//        Map<String, Integer> topicMap = new HashMap<String, Integer>();
+//        String[] topics = topicList.split(",");
+//        for (String topic: topics) {
+//            topicMap.put(topic, numThreads);
+//        }
+//        JavaPairReceiverInputDStream<String, String> messages =
+//                KafkaUtils.createStream(jssc, zooServers, "yauza", topicMap);
 
         Set<String> topicMap = new HashSet<>(Arrays.asList(topicList.split(",")));
         Map<String, String> kafkaParams = new HashMap<String, String>() {
             {
                 put("metadata.broker.list", bootstrapServers);
                 put("auto.offset.reset", "smallest");
+                //put("auto.offset.reset", "largest");
             }
         };
 
@@ -124,20 +117,17 @@ public class SparkBenchmark {
         for (Map.Entry<String, JavaDStream<String>> entry : outputStreams.entrySet()) {
             entry.getValue().print();
 
+            Broadcast<KafkaSink> kafkaSink = jssc.sparkContext().broadcast(new KafkaSink(kafkaProps));
             entry.getValue().foreachRDD(rdd -> {
+                String topic = config.getProperty(
+                        Config.OUTPUT_TOPIC_PROP_NAME_PREFIX + entry.getKey(),
+                        Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey());
+
                 rdd.foreachPartition(
                         partitionOfRecords -> {
                             partitionOfRecords.forEachRemaining(x -> {
-                                System.out.print(x);
-//                                // not optimal but does not require serializing
-//                                KafkaProducer<String, String> producer = new KafkaProducer<String, String>(kafkaProps);
-//
-//                                ProducerRecord<String, String> message = new ProducerRecord<String, String>(
-//                                        config.getProperty(
-//                                                Config.OUTPUT_TOPIC_PROP_NAME_PREFIX + entry.getKey(),
-//                                                Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey()),
-//                                        null, x);
-//                                producer.send(message);
+                                //System.out.print(x);
+                                kafkaSink.value().send(topic,x);
                             });
                         });
             });
