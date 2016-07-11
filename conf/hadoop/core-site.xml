@@ -9,7 +9,7 @@
 
     <property>
         <name>hadoop.tmp.dir</name>
-        <value>/tmp/hadoop-yauza/hdfs-${user.name}</value>
+        <value>file:///tmp/yauza/hdfs-temp-${user.name}</value>
         <final>true</final>
     </property>
 </configuration>
