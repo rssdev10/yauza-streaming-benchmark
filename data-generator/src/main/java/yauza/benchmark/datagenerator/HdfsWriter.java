@@ -21,12 +21,12 @@ import java.net.URISyntaxException;
  */
 public class HdfsWriter {
     Logger LOG = LoggerFactory.getLogger(HdfsWriter.class);
-    private static final int eventsNum = 1000 * 1000 * 10;
-//    private static final int eventsNum = 1000 * 10;
+    public static final int eventsNum = 1000 * 1000 * 10;
+//    public static final int eventsNum = 1000 * 10;
 
     private String written = "0";
 
-    public void generate(String hdfsPath, String dataFile) {
+    public void generate(String hdfsPath, String dataFile, Long messagesNumber) {
         Configuration configuration = new Configuration();
 
         FileSystem hdfs = null;
@@ -44,7 +44,7 @@ public class HdfsWriter {
                     });
             BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
             String formattedDelimiter = "\n" + DataFileInputFormat.delimiter;
-            for (int i = 0; i < eventsNum; i++) {
+            for (int i = 0; i < messagesNumber; i++) {
                 String element = DummyEvent.generateJSON();
                 br.write(element);
                 br.write(formattedDelimiter);

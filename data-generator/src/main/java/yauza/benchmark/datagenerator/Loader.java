@@ -27,7 +27,7 @@ public class Loader {
             System.exit(1);
         }
 
-        String confFilename = parameterTool.get("config");
+        String confFilename = parameterTool.get("config", "config/benchmark.conf");
         Config config;
         if (confFilename != null && !confFilename.isEmpty()) {
             config = new Config(confFilename);
@@ -35,15 +35,19 @@ public class Loader {
             config = new Config(parameterTool.getProperties());
         }
 
-        String hdfsPath = config.getProperties().getProperty("hdfs", "hdfs://localhost:9000");
-        String dataFile = config.getProperties().getProperty("datafile", "/yauza-benchmark/datafile.json");
+        String hdfsPath = config.getProperties().getProperty("benchmark.hdfs", "hdfs://localhost:9000");
+        String dataFile = config.getProperties().getProperty("benchmark.datafile", "/yauza-benchmark/datafile.json");
+        Long messagesNum =
+                Long.parseLong(
+                        config.getProperties().getProperty(
+                                "benchmark.messages.number", Long.toString(HdfsWriter.eventsNum)));
 
         // read from command line !
         String mode = parameterTool.get("mode", "");
 
         if (mode.equals("generate_file")) {
             // generate data and write into HDFS
-            new HdfsWriter().generate(hdfsPath, dataFile);
+            new HdfsWriter().generate(hdfsPath, dataFile, messagesNum);
         } else if (mode.equals("load_to_kafka")) {
             // load data from HDFS and send to the Kafka's queue
             final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -72,14 +76,14 @@ public class Loader {
                 "Missing parameters!\n" +
                         "Usage:\n" +
                         " data-generator --mode generate_file" +
-                        " --hdfs hdfs://localhost:9000" +
-                        " --datafile datafile.json" +
+                        " --benchmark.hdfs hdfs://localhost:9000" +
+                        " --benchmark.datafile datafile.json" +
 
                         " data-generator --mode load_to_kafka" +
                         " --topic <Kafka topic>" +
                         " --bootstrap.servers <kafka brokers>" +
-                        " --hdfs hdfs://localhost:9000" +
-                        " --datafile datafile.json\n"
+                        " --benchmark.hdfs hdfs://localhost:9000" +
+                        " --benchmark.datafile datafile.json\n"
         );
     }
 }
