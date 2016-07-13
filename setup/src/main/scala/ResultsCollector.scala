@@ -8,6 +8,7 @@ import kafka.consumer.KafkaStream
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import yauza.benchmark.common.Product
+import yauza.benchmark.common.Config
 
 import scala.collection.JavaConversions.asScalaIterator
 import scala.collection.mutable.ArrayBuffer
@@ -20,6 +21,9 @@ object ResultsCollector {
   def main(args: Array[String]) {
     val gson = new Gson()
 
+    val config:Config = new Config("config/benchmark.conf")
+    val kafkaProps = config.getKafkaProperties()
+
     Array(
       "uniq-users-number",
       "uniq-sessions-number",
@@ -29,7 +33,7 @@ object ResultsCollector {
       .par
       .map(str => "out-" + str) // add common suffix
       .map(queue => {
-        val array = new Consumer(queue).run()
+        val array = new Consumer(queue, kafkaProps).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {
           acc.latency.addValue(item.getLatency)
           acc.throughput.addValue((item.getProcessedEvents / (item.getProcessingTime / 1000.0)).toInt)
@@ -45,8 +49,7 @@ object ResultsCollector {
       .foreach(println)
   }
 
-  class Consumer (val topic: String) {
-    val props = new Properties();
+  class Consumer (val topic: String, val props:Properties) {
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza"
       + scala.util.Random.nextInt(1000).toString); //debug feature to avoid seek operaion
