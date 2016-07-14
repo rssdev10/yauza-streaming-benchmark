@@ -1,10 +1,13 @@
 import org.apache.spark.SparkConf;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.junit.Test;
 
 import helpers.TestDataGenerator;
+import scala.Tuple2;
 import yauza.benchmark.spark.SparkBenchmark;
 
 import static org.junit.Assert.*;
@@ -22,7 +25,9 @@ public class LocalSparkTest {
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(10 * 1000));
 
 
-        JavaDStream<String> dataStream = jssc.receiverStream(TestDataGenerator.getDatastream());
+        JavaPairDStream<String, String> dataStream =
+                jssc.receiverStream(TestDataGenerator.getDatastream())
+                .mapToPair(x -> new Tuple2<String, String>("", x));
         Map<String, JavaDStream<String>> outputStreams = SparkBenchmark.buildTopology(dataStream);
 
         for (Entry<String, JavaDStream<String>> entry : outputStreams.entrySet()) {

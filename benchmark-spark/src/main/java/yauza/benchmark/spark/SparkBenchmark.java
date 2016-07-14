@@ -7,10 +7,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.streaming.Milliseconds;
 import org.apache.spark.streaming.Seconds;
-import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairInputDStream;
-import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.api.java.*;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
@@ -137,7 +134,7 @@ public class SparkBenchmark {
         jssc.awaitTermination();
     }
 
-    public static Map<String, JavaDStream<String>> buildTopology(JavaPairInputDStream<String, String> dataStream) {
+    public static Map<String, JavaDStream<String>> buildTopology(JavaPairDStream<String, String> dataStream) {
         HashMap<String, JavaDStream<String>> result = new HashMap<String, JavaDStream<String>>();
 
         JavaDStream<Event> eventStream = dataStream.map(message -> {
@@ -145,7 +142,7 @@ public class SparkBenchmark {
             event.setInputTime();
             //System.out.print(json);
             return event;
-        }).window(Seconds.apply(10));
+        }).window(Seconds.apply(10)).cache();
 
         result.put("uniq_users_number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
