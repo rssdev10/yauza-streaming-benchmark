@@ -27,8 +27,6 @@ import yauza.benchmark.common.Event;
 public class UniqItems {
 
     static class UniqAggregator extends Statistics {
-        public Set<String> uniqIds = new HashSet<String>();
-
         public Integer value = 0;
     }
 
@@ -41,25 +39,30 @@ public class UniqItems {
      */
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor) {
 
-        JavaDStream<UniqAggregator> uniques = eventStream.mapPartitions(new FlatMapFunction<Iterator<Event>, UniqAggregator>() {
-            @Override
-            public Iterator<UniqAggregator> call(Iterator<Event> eventIterator) throws Exception {
-                UniqAggregator accumulator = new UniqAggregator();
-
-                eventIterator.forEachRemaining(new Consumer<Event>() {
+        JavaDStream<UniqAggregator> uniques = eventStream
+                .mapToPair(x -> new Tuple2<String, Event>(fieldAccessor.apply(x), x))
+                .repartition(SparkBenchmark.partNum)
+                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<String, Event>>, UniqAggregator>() {
                     @Override
-                    public void accept(Event value) {
-                        accumulator.uniqIds.add(fieldAccessor.apply(value));
+                    public Iterator<UniqAggregator> call(Iterator<Tuple2<String, Event>> eventIterator) throws Exception {
+                        UniqAggregator accumulator = new UniqAggregator();
+                        Set<String> uniqIds = new HashSet<String>();
 
-                        accumulator.registerEvent(value);
+                        eventIterator.forEachRemaining(new Consumer<Tuple2<String, Event>>() {
+                            @Override
+                            public void accept(Tuple2<String, Event> value) {
+                                uniqIds.add(fieldAccessor.apply(value._2()));
+
+                                accumulator.registerEvent(value._2());
+                            }
+                        });
+                        accumulator.value = uniqIds.size();
+
+                        List<UniqAggregator> list = Arrays.asList(accumulator);
+                        return list.iterator();
                     }
-                });
-                accumulator.value = accumulator.uniqIds.size();
-
-                List<UniqAggregator> list = Arrays.asList(accumulator);
-                return list.iterator();
-            }
-        });
+                })
+                .repartition(1);
 
         return uniques
                 .reduce((x1, x2) -> {
