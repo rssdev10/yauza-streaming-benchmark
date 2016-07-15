@@ -144,13 +144,13 @@ public class SparkBenchmark {
             return event;
         }).window(Seconds.apply(10)).cache();
 
-        result.put("uniq_users_number",
+        result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
 
-/*        result.put("uniq_sessions_number",
+        result.put("uniq-sessions-number",
                 UniqItems.transform(eventStream, (event) -> event.getSessionId()));
 
-        result.put("avr_price",
+        result.put("avr-price",
                 AvrCounter.transform(
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();
@@ -158,7 +158,7 @@ public class SparkBenchmark {
                         }),
                         (event) -> event.getPrice()));
 
-        result.put("avr_session_duration",
+        result.put("avr-session-duration",
                 AvrDurationTimeCounter.transform(
                         eventStream.filter(event -> {
                             String str = event.getReceiptId();
@@ -167,7 +167,7 @@ public class SparkBenchmark {
                         (event) -> event.getSessionId(),
                         (event) -> event.getUnixtimestamp()
                         )
-                );*/
+                );
         return result;
     }
 }
