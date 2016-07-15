@@ -21,7 +21,7 @@ object ResultsCollector {
   def main(args: Array[String]) {
     val gson = new Gson()
 
-    val config:Config = new Config("config/benchmark.conf")
+    val config:Config = new Config("conf/benchmark.conf")
     val kafkaProps = config.getKafkaProperties()
 
     Array(
@@ -69,7 +69,7 @@ object ResultsCollector {
     props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "range");
     props.put("zookeeper.connect", "localhost:2181");
 
-    val consumer:KafkaConsumer[Integer, String] = new KafkaConsumer(props);
+//  val consumer:KafkaConsumer[Integer, String] = new KafkaConsumer(props);
 
     def run():ArrayBuffer[Product] = {
       var result = ArrayBuffer[Product]()
@@ -136,8 +136,8 @@ object ResultsCollector {
   }
 
   class Experiment(val name:String) {
-    var totalTime:Long = _
-    var totalProcessed: Long = _
+    var totalTime:Long = 0
+    var totalProcessed: Long = 0
     var latency:Statistics = new Statistics
     var throughput: Statistics = new Statistics
   }
