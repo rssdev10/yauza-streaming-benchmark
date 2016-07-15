@@ -71,7 +71,7 @@ public class UniqItems {
                     return x1;
                 })
                 .map(aggregator -> {
-                    Product product = new Product("UniqItems", aggregator.toString());
+                    Product product = new Product("UniqItems", aggregator.value.toString());
                     product.setStatistics(aggregator);
                     return product.toString();
                 });

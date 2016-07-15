@@ -1,15 +1,21 @@
 package yauza.benchmark.spark;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 import org.apache.spark.streaming.api.java.JavaDStream;
+import scala.Tuple2;
 import yauza.benchmark.common.Event;
 import yauza.benchmark.common.Product;
 import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
 import yauza.benchmark.common.accessors.FieldAccessorString;
+
+import static yauza.benchmark.spark.SparkBenchmark.partNum;
 
 /**
  * This class implements calculation of average duration of sessions by specified
@@ -50,7 +56,6 @@ public class AvrDurationTimeCounter {
         public String toString() {
             return "AverageAggregate [average=" + average + ", min=" + min + ", max=" + max + ", count=" + count + "]";
         }
-
     }
 
     /**
@@ -64,8 +69,96 @@ public class AvrDurationTimeCounter {
      */
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor,
                                                 FieldAccessorLong timestampAccessor) {
-        return eventStream.map(x -> {
-                    Product product = new Product("AvrDurationTimeCounter", x.toString());
+        JavaDStream<AverageAggregate> avrByPartitions = eventStream
+                .mapToPair(x -> new Tuple2<String, Event>(fieldAccessor.apply(x), x))
+                .repartition(partNum)
+                .mapPartitions(eventIterator -> {
+                    SessionAggregate accumulator = new SessionAggregate();
+                    eventIterator.forEachRemaining(new Consumer<Tuple2<String, Event>>() {
+                        @Override
+                        public void accept(Tuple2<String, Event> value) {
+                            Event event = value._2();
+                            String key = fieldAccessor.apply(event);
+                            TimeAggregate time = accumulator.sessions.get(key);
+                            if (time == null) {
+                                time = new TimeAggregate();
+                            }
+                            time.lastTime = event.getUnixtimestamp();
+                            if (time.firstTime == 0) {
+                                time.firstTime = time.lastTime;
+                            }
+                            accumulator.sessions.put(key, time);
+
+                            accumulator.registerEvent(event);
+                        }
+                    });
+                    List<SessionAggregate> list = Arrays.asList(accumulator);
+                    return list.iterator();
+                })
+                .map(value -> {
+                    long min = Long.MAX_VALUE;
+                    long max = Long.MIN_VALUE;
+
+                    double avr = 0;
+                    double count = 0;
+                    for (Entry<String, TimeAggregate> entry : value.sessions.entrySet()) {
+                        long timeInterval = entry.getValue().lastTime - entry.getValue().firstTime;
+                        // Check for completed sessions only.
+                        // It means that at least two events must exist with different timestamps.
+                        if (timeInterval > 0) {
+                            avr = avr * (count / (count + 1)) + (timeInterval) / (count + 1);
+                            count = count + 1;
+
+                            if (min > timeInterval) {
+                                min = timeInterval;
+                            }
+
+                            if (max < timeInterval) {
+                                max = timeInterval;
+                            }
+                        }
+                    }
+
+                    AverageAggregate aggregate = new AverageAggregate(avr, (long) count, min, max);
+
+                    aggregate.summarize(value);
+
+                    return aggregate;
+                })
+                .repartition(1);
+
+        return avrByPartitions
+                .mapPartitions(eventIterator -> {
+                    AverageAggregate accumulator = new AverageAggregate(0, 0);
+                    eventIterator.forEachRemaining(new Consumer<AverageAggregate>() {
+                        @Override
+                        public void accept(AverageAggregate value) {
+                            long countAcc = accumulator.count;
+                            long countVal = value.count;
+                            if (countAcc + value.count != 0) {
+                                accumulator.average = accumulator.average * (countAcc * 1.0 / (countVal + countAcc))
+                                        + value.average * (countVal * 1.0 / (countAcc + countVal));
+                                accumulator.count = countAcc + countVal;
+                            }
+
+                            if (accumulator.min > value.min ) {
+                                accumulator.min = value.min;
+                            }
+
+                            if (accumulator.max < value.max) {
+                                accumulator.max = value.max;
+                            }
+
+                            //System.out.println(value.toString());
+
+                            accumulator.summarize(value);
+                        }
+                    });
+                    List<AverageAggregate> list = Arrays.asList(accumulator);
+                    return list.iterator();
+                })
+                .map(x -> {
+                    Product product = new Product("AvrDurationTimeCounter", Long.toString((long) x.average));
                     return product.toString();
                 });
     }
