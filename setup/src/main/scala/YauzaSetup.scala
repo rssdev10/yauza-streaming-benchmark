@@ -259,6 +259,31 @@ object YauzaSetup {
       stop(seq.filter(x => x != benchmark_flink))
     }),
 
+    "test_spark" -> (() => {
+      // try to run Spark
+      val seq = Array(
+        zookeeper,
+        hadoop,
+        kafka,
+        //spark,
+
+        delay,
+
+        datagenerator//,
+
+        //benchmark_spark
+      )
+
+      start(seq)
+
+      //Thread sleep TIME_OF_TEST
+      //products(benchmark_spark).stop
+
+      start(Seq(results_collector))
+
+      //stop(seq.filter(x => x != benchmark_spark))
+    }),
+
     "stop_all" -> (() => {
       val seq = Array(
         zookeeper,
