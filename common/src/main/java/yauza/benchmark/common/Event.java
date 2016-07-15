@@ -1,5 +1,6 @@
 package yauza.benchmark.common;
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -8,7 +9,7 @@ import java.util.Date;
   Class for manipulation with universal event. This class presents absract
   event structure about current app's activity from mobile devices to web server
 */
-public class Event {
+public class Event implements Serializable {
     public static final String eventTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     private String timestamp;
