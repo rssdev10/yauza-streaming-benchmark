@@ -35,10 +35,12 @@ object ResultsCollector {
       .map(queue => {
         val array = new Consumer(queue, kafkaProps).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {
-          acc.latency.addValue(item.getLatency)
-          acc.throughput.addValue((item.getProcessedEvents / (item.getProcessingTime / 1000.0)).toInt)
-          acc.totalProcessed = acc.totalProcessed + item.getProcessedEvents
-          acc.totalTime = acc.totalTime + item.getProcessingTime / 1000
+          if (item.getProcessedEvents > 0) {
+            acc.latency.addValue(item.getLatency)
+            acc.throughput.addValue((item.getProcessedEvents / (item.getProcessingTime / 1000.0)).toInt)
+            acc.totalProcessed = acc.totalProcessed + item.getProcessedEvents
+            acc.totalTime = acc.totalTime + item.getProcessingTime / 1000
+          }
           acc
         }}
       })
