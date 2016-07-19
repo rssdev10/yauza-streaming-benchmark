@@ -72,7 +72,7 @@ public class UniqItems {
 
             @Override
             public ProductAggregator fold(ProductAggregator accumulator, UniqAggregator value) throws Exception {
-                System.out.println(value.toString());
+                //System.out.println(value.toString());
                 accumulator.value += value.uniqIds.size();
 
                 accumulator.summarize(value);

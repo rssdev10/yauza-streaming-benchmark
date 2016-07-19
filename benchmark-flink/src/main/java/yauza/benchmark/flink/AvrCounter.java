@@ -23,7 +23,6 @@ import yauza.benchmark.common.accessors.FieldAccessorLong;
 public class AvrCounter {
     private static class AverageAggregate extends Statistics {
         public double average = 0.0;
-        public long count = 0l;
 
         @Override
         public String toString() {
@@ -57,7 +56,6 @@ public class AvrCounter {
                         accumulator.average =
                                 accumulator.average * (count / (double)countNext) +
                                 fieldAccessor.apply(event) / (double)countNext;
-                        accumulator.count = countNext;
 
                         accumulator.registerEvent(event);
 
@@ -75,14 +73,13 @@ public class AvrCounter {
 
             @Override
             public AverageAggregate fold(AverageAggregate accumulator, AverageAggregate value) throws Exception {
-                System.out.println(value.toString());
+                //System.out.println(value.toString());
 
                 long countAcc = accumulator.count;
                 long countVal = value.count;
                 if (countAcc + value.count != 0) {
                     accumulator.average = accumulator.average * (countAcc / (double)(countVal + countAcc))
                             + value.average * (countVal / (double)(countAcc + countVal));
-                    accumulator.count = countAcc + countVal;
                 }
 
                 accumulator.summarize(value);

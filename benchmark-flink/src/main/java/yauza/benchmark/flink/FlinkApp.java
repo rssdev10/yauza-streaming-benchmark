@@ -47,6 +47,9 @@ public class FlinkApp {
 
         Properties kafkaProps = config.getKafkaProperties();
 
+        kafkaProps.put("enable.auto.commit", "false");
+        kafkaProps.put("auto.offset.reset", "smallest");
+
         DataStream<String> dataStream = env
                 .addSource(new FlinkKafkaConsumer08<String>(
                         config.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME),
