@@ -68,6 +68,8 @@ public class UniqItems {
                 .reduce((x1, x2) -> {
                     x1.value += x2.value;
 
+                    x1.summarize(x2);
+
                     return x1;
                 })
                 .map(aggregator -> {

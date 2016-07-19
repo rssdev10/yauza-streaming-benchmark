@@ -38,7 +38,6 @@ public class AvrDurationTimeCounter {
         public double average = 0.0;
         public long min = Long.MAX_VALUE;
         public long max = Long.MIN_VALUE;
-        public long count = 0l;
 
         public AverageAggregate(double average, long count) {
             this.average = average;
@@ -138,7 +137,6 @@ public class AvrDurationTimeCounter {
                             if (countAcc + value.count != 0) {
                                 accumulator.average = accumulator.average * (countAcc * 1.0 / (countVal + countAcc))
                                         + value.average * (countVal * 1.0 / (countAcc + countVal));
-                                accumulator.count = countAcc + countVal;
                             }
 
                             if (accumulator.min > value.min ) {
@@ -159,6 +157,7 @@ public class AvrDurationTimeCounter {
                 })
                 .map(x -> {
                     Product product = new Product("AvrDurationTimeCounter", Long.toString((long) x.average));
+                    product.setStatistics(x);
                     return product.toString();
                 });
     }

@@ -21,7 +21,6 @@ import static yauza.benchmark.spark.SparkBenchmark.partNum;
 public class AvrCounter {
     private static class AverageAggregate extends Statistics {
         public double average = 0.0;
-        public long count = 0l;
 
         @Override
         public String toString() {
@@ -51,7 +50,6 @@ public class AvrCounter {
                             accumulator.average =
                                     accumulator.average * (count / (double) countNext) +
                                             fieldAccessor.apply(value._2()) / (double) countNext;
-                            accumulator.count = countNext;
 
                             accumulator.registerEvent(value._2());
                         }
@@ -71,17 +69,17 @@ public class AvrCounter {
                     if (countAcc + value.count != 0) {
                         accumulator.average = accumulator.average * (countAcc / (double)(countVal + countAcc))
                                 + value.average * (countVal / (double)(countAcc + countVal));
-                        accumulator.count = countAcc + countVal;
                     }
 
                     accumulator.summarize(value);
                     return accumulator;
                 })
                 .map(x -> {
-            Product product = new Product(
-                    "AvrCounter",
-                    "Avr: " + Long.toString(round(x.average)) + "; num: " + Long.toString(x.count));
-            return product.toString();
-        });
+                    Product product = new Product(
+                            "AvrCounter",
+                            "Avr: " + Long.toString(round(x.average)) + "; num: " + Long.toString(x.count));
+                    product.setStatistics(x);
+                    return product.toString();
+                });
     }
 }
