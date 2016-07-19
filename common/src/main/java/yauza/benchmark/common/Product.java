@@ -2,12 +2,13 @@ package yauza.benchmark.common;
 
 import com.google.gson.Gson;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
  */
-public class Product {
+public class Product implements Serializable {
     final static private SimpleDateFormat sdf = new SimpleDateFormat(Event.eventTimeFormat);
     final static private Gson gson = new Gson();
 
@@ -15,14 +16,14 @@ public class Product {
     private String type;
     private String value;
 
-    private Long unixTimestamp;
+    private Long unixTimestamp = 0l;
 
     /** latency in ms */
-    private Long latency;
+    private Long latency = 0l;
     /** all time of processing in ms */
-    private Long processingTime;
+    private Long processingTime = 0l;
     /** number of processed events */
-    private Long processedEvents;
+    private Long processedEvents = 0l;
 
     public Product(String value) {
         this.unixTimestamp = new Date().getTime();
