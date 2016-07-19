@@ -142,7 +142,7 @@ public class SparkBenchmark {
             event.setInputTime();
             //System.out.print(json);
             return event;
-        }).window(Seconds.apply(10)).cache();
+        }).window(Seconds.apply(10), Seconds.apply(10)).cache();
 
         result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
