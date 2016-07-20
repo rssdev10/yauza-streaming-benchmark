@@ -65,7 +65,7 @@ public class FlinkApp {
                                     Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey()),
                             new SimpleStringSchema(), kafkaProps));
 
-            //entry.getValue().print();
+            entry.getValue().print();
         }
 
         env.execute();
