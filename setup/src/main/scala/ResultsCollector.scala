@@ -40,6 +40,7 @@ object ResultsCollector {
             acc.throughput.addValue((item.getProcessedEvents / (item.getProcessingTime / 1000.0)).toInt)
             acc.totalProcessed = acc.totalProcessed + item.getProcessedEvents
             acc.totalTime = acc.totalTime + item.getProcessingTime / 1000
+            acc.values ++= Array(item.getValue)
           }
           acc
         }}
@@ -142,5 +143,6 @@ object ResultsCollector {
     var totalProcessed: Long = 0
     var latency:Statistics = new Statistics
     var throughput: Statistics = new Statistics
+    var values = new Array[String](0)
   }
 }

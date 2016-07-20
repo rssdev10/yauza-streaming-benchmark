@@ -38,6 +38,7 @@ public class KafkaSink implements Serializable {
         if (producer == null) {
             if (config != null) {
                 init(config);
+                producer.send(new ProducerRecord<>(topic, value));
             }
         } else {
             producer.send(new ProducerRecord<>(topic, value));
