@@ -27,7 +27,7 @@ public class Loader {
             System.exit(1);
         }
 
-        String confFilename = parameterTool.get("config", "config/benchmark.conf");
+        String confFilename = parameterTool.get("config", "conf/benchmark.conf");
         Config config;
         if (confFilename != null && !confFilename.isEmpty()) {
             config = new Config(confFilename);

@@ -29,6 +29,8 @@ public class HdfsWriter {
     public void generate(String hdfsPath, String dataFile, Long messagesNumber) {
         Configuration configuration = new Configuration();
 
+        System.out.println("Generating " + messagesNumber.toString() + " messages");
+
         FileSystem hdfs = null;
         try {
             hdfs = FileSystem.get(new URI(hdfsPath), configuration);
