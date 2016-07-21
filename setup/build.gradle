@@ -42,6 +42,20 @@ task test_flink(type: JavaExec, dependsOn: classes) {
     classpath configurations.runtime
 }
 
+task test_spark(type: JavaExec, dependsOn: classes) {
+    args 'test_spark'
+
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    workingDir("../")
+    main = 'YauzaSetup'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
 task test_data_prepare(type: JavaExec, dependsOn: classes) {
     args 'test_data_prepare'
 
