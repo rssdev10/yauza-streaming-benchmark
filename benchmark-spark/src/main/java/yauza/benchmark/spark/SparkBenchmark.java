@@ -75,8 +75,8 @@ public class SparkBenchmark {
                 // physical limit of processing speed
                 .set("spark.streaming.receiver.maxRate", config.getProperty("spark.streaming.receiver.maxRate", "0"))
                 .set("spark.streaming.kafka.maxRatePerPartition", config.getProperty("spark.streaming.kafka.maxRatePerPartition", "0"))
-                .setMaster("local");
-//                .setMaster(spark);
+//                .setMaster("local");
+                .setMaster(spark);
 
         // Create the context with 10 seconds batch size
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Milliseconds.apply(5000));
