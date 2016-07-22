@@ -39,7 +39,8 @@ public class SparkBenchmark {
             System.exit(1);
         }
 
-        CommandLineParser parser = new DefaultParser();
+        //CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new PosixParser();
         CommandLine cmd = parser.parse(opts, args);
 
         String confFilename = cmd.getOptionValue("config");
