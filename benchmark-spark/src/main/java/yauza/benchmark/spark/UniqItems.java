@@ -10,6 +10,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -18,6 +19,8 @@ import yauza.benchmark.common.Product;
 import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorString;
 import yauza.benchmark.common.Event;
+
+import static yauza.benchmark.spark.SparkBenchmark.partNum;
 
 /**
  * This class implements aggregation by specified field and produces the number
@@ -40,20 +43,22 @@ public class UniqItems {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor) {
 
         JavaDStream<UniqAggregator> uniques = eventStream
-                .mapToPair(x -> new Tuple2<String, Event>(fieldAccessor.apply(x), x))
-                .repartition(SparkBenchmark.partNum)
-                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<String, Event>>, UniqAggregator>() {
+                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
+                .groupByKey(partNum)
+                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<Integer, Iterable<Event>>>, UniqAggregator>() {
                     @Override
-                    public Iterator<UniqAggregator> call(Iterator<Tuple2<String, Event>> eventIterator) throws Exception {
+                    public Iterator<UniqAggregator> call(Iterator<Tuple2<Integer, Iterable<Event>>> tuple2Iterator) throws Exception {
                         UniqAggregator accumulator = new UniqAggregator();
                         Set<String> uniqIds = new HashSet<String>();
 
-                        eventIterator.forEachRemaining(new Consumer<Tuple2<String, Event>>() {
+                        tuple2Iterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
                             @Override
-                            public void accept(Tuple2<String, Event> value) {
-                                uniqIds.add(fieldAccessor.apply(value._2()));
+                            public void accept(Tuple2<Integer, Iterable<Event>> value) {
+                                for (Event event: value._2()) {
+                                    uniqIds.add(fieldAccessor.apply(event));
 
-                                accumulator.registerEvent(value._2());
+                                    accumulator.registerEvent(event);
+                                }
                             }
                         });
                         accumulator.value = uniqIds.size();

@@ -38,20 +38,19 @@ public class AvrCounter {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorLong fieldAccessor) {
 
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
-                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).intValue() % partNum, x))
                 .repartition(partNum)
                 .mapPartitions(eventIterator -> {
                     AverageAggregate accumulator = new AverageAggregate();
-                    eventIterator.forEachRemaining(new Consumer<Tuple2<Integer, Event>>() {
+                    eventIterator.forEachRemaining(new Consumer<Event>() {
                         @Override
-                        public void accept(Tuple2<Integer, Event> value) {
+                        public void accept(Event value) {
                             long count = accumulator.count;
                             long countNext = count + 1;
                             accumulator.average =
                                     accumulator.average * (count / (double) countNext) +
-                                            fieldAccessor.apply(value._2()) / (double) countNext;
+                                            fieldAccessor.apply(value) / (double) countNext;
 
-                            accumulator.registerEvent(value._2());
+                            accumulator.registerEvent(value);
                         }
                     });
 

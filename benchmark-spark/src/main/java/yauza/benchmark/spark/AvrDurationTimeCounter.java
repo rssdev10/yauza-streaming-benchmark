@@ -69,26 +69,27 @@ public class AvrDurationTimeCounter {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor,
                                                 FieldAccessorLong timestampAccessor) {
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
-                .mapToPair(x -> new Tuple2<String, Event>(fieldAccessor.apply(x), x))
-                .repartition(partNum)
+                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
+                .groupByKey(partNum)
                 .mapPartitions(eventIterator -> {
                     SessionAggregate accumulator = new SessionAggregate();
-                    eventIterator.forEachRemaining(new Consumer<Tuple2<String, Event>>() {
+                    eventIterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
                         @Override
-                        public void accept(Tuple2<String, Event> value) {
-                            Event event = value._2();
-                            String key = fieldAccessor.apply(event);
-                            TimeAggregate time = accumulator.sessions.get(key);
-                            if (time == null) {
-                                time = new TimeAggregate();
-                            }
-                            time.lastTime = event.getUnixtimestamp();
-                            if (time.firstTime == 0) {
-                                time.firstTime = time.lastTime;
-                            }
-                            accumulator.sessions.put(key, time);
+                        public void accept(Tuple2<Integer, Iterable<Event>> value) {
+                            for (Event event: value._2()) {
+                                String key = fieldAccessor.apply(event);
+                                TimeAggregate time = accumulator.sessions.get(key);
+                                if (time == null) {
+                                    time = new TimeAggregate();
+                                }
+                                time.lastTime = event.getUnixtimestamp();
+                                if (time.firstTime == 0) {
+                                    time.firstTime = time.lastTime;
+                                }
+                                accumulator.sessions.put(key, time);
 
-                            accumulator.registerEvent(event);
+                                accumulator.registerEvent(event);
+                            }
                         }
                     });
                     List<SessionAggregate> list = Arrays.asList(accumulator);
