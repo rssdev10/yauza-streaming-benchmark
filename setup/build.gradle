@@ -90,3 +90,10 @@ task repl(type:JavaExec) {
     standardInput System.in
     args '-usejavacp'
 }
+
+task kafka_check(type:JavaExec) {
+    main = "KafkaChecker"
+    workingDir("../")
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
