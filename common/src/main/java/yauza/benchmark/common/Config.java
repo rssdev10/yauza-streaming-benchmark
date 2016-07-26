@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class Config {
+    public static final String CONFIF_FILE_NAME = "conf/benchmark.conf";
+
     public static final String INPUT_TOPIC_PROP_NAME = "kafka.topic.input";
     public static final String INPUT_TOPIC_NAME = "yauza-input";
 
