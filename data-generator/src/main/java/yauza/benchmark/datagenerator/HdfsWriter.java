@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import yauza.benchmark.common.Config;
 import yauza.benchmark.common.helpers.DummyEvent;
 
 import java.io.BufferedWriter;
@@ -26,8 +27,14 @@ public class HdfsWriter {
 
     private String written = "0";
 
-    public void generate(String hdfsPath, String dataFile, Long messagesNumber) {
+    public void generate(String hdfsPath, String dataFile, Config config) {
         Configuration configuration = new Configuration();
+
+        DummyEvent.init(config);
+
+        Long messagesNumber = Long.parseLong(
+                config.getProperties().getProperty(
+                        "benchmark.messages.number", Long.toString(HdfsWriter.eventsNum)));
 
         System.out.println("Generating " + messagesNumber.toString() + " messages");
 

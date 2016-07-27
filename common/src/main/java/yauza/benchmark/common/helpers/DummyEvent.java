@@ -9,19 +9,20 @@ import java.util.UUID;
 
 import com.google.gson.Gson;
 
+import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
 /**
   Generator of event sequence with predefined realistic fields.
 */
 public class DummyEvent {
-    private static Gson gson = new Gson();
+    private static final Gson gson = new Gson();
 
-    private static final int uNum = 30;
+    private static int uNum = 30;
     private static final int percentageChangedSessions = 20;
-    private static final int percentagePurchase = 10;
+    private static int percentagePurchase = 10;
 
-    private static final int maxPrice = 10000; // in cents
+    private static int maxPrice = 10000; // in cents
 
     private static long timestamp = 0;
 
@@ -34,16 +35,29 @@ public class DummyEvent {
         add("other.microsoft");
     }};
 
-    private static final Random rand = new Random();
+    private static final Random rand = new Random(System.currentTimeMillis());
 
-    private static final List<String> uId = new ArrayList<String>() {
-        private static final long serialVersionUID = -2650978174049138472L;
-        {
-            for (int i = 0; i < uNum; i++) {
-                add(UUID.randomUUID().toString());
+    private static List<String> uId = initGuidArray();
+
+    static public void init(Config config) {
+        uNum = Integer.parseInt(config.getProperty("benchmark.data.uniqueusers.number", "1000"));
+        initGuidArray();
+
+        maxPrice = Integer.parseInt(config.getProperty("benchmark.data.purchase.maxprice", "1000"));
+        maxPrice = Integer.parseInt(config.getProperty("benchmark.data.purchase.percentage", "10"));
+    }
+
+    static public List<String> initGuidArray() {
+        uId = new ArrayList<String>() {
+            private static final long serialVersionUID = -2650978174049138472L;
+            {
+                for (int i = 0; i < uNum; i++) {
+                    add(UUID.randomUUID().toString());
+                }
             }
-        }
-    };
+        };
+        return uId;
+    }
 
     static public String eventToString(Event event) {
         return gson.toJson(DummyEvent.generate());

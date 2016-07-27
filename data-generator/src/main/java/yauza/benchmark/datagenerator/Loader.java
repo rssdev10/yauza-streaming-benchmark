@@ -27,7 +27,7 @@ public class Loader {
             System.exit(1);
         }
 
-        String confFilename = parameterTool.get("config", "conf/benchmark.conf");
+        String confFilename = parameterTool.get("config", Config.CONFIF_FILE_NAME);
         Config config;
         if (confFilename != null && !confFilename.isEmpty()) {
             config = new Config(confFilename);
@@ -37,17 +37,13 @@ public class Loader {
 
         String hdfsPath = config.getProperties().getProperty("benchmark.hdfs", "hdfs://localhost:9000");
         String dataFile = config.getProperties().getProperty("benchmark.datafile", "/yauza-benchmark/datafile.json");
-        Long messagesNum =
-                Long.parseLong(
-                        config.getProperties().getProperty(
-                                "benchmark.messages.number", Long.toString(HdfsWriter.eventsNum)));
 
         // read from command line !
         String mode = parameterTool.get("mode", "");
 
         if (mode.equals("generate_file")) {
             // generate data and write into HDFS
-            new HdfsWriter().generate(hdfsPath, dataFile, messagesNum);
+            new HdfsWriter().generate(hdfsPath, dataFile, config);
         } else if (mode.equals("load_to_kafka")) {
             // load data from HDFS and send to the Kafka's queue
             final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
