@@ -15,7 +15,8 @@ import yauza.benchmark.common.Event;
 import java.util.*;
 
 public class SparkBenchmark {
-    public static final int partNum = 3;
+    public static int partNum = 3;
+    public static int windowDurationTime = 10;
     public static final int emergencyTriggerTimeout = 3;
 
     private static Gson gson = new Gson(); 
@@ -63,6 +64,10 @@ public class SparkBenchmark {
         int numThreads = Integer.parseInt(config.getProperty("threads", "1"));
         String spark = config.getProperty("spark.master", "spark://localhost:7077");
 
+
+        partNum = Integer.parseInt(config.getProperty(Config.PROP_PARTITIONS_NUMBER, "3"));
+        windowDurationTime = Integer.parseInt(config.getProperty(Config.PROP_WINDOW_DURATION, "10"));
+
         Properties kafkaProps = config.getKafkaProperties();
 
         String topicList = kafkaProps.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME);
@@ -79,7 +84,7 @@ public class SparkBenchmark {
                 .setMaster(spark);
 
         // Create the context with 10 seconds batch size
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Milliseconds.apply(5000));
+        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Seconds.apply(windowDurationTime/2));
 
         //jssc.checkpoint("_checkpoint");
 
@@ -143,7 +148,7 @@ public class SparkBenchmark {
             event.setInputTime();
             //System.out.print(json);
             return event;
-        }).window(Seconds.apply(10), Seconds.apply(10)).cache();
+        }).window(Seconds.apply(windowDurationTime), Seconds.apply(windowDurationTime)).cache();
 
         result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));
