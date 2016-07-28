@@ -79,7 +79,7 @@ public class AvrDurationTimeCounter {
                 .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % partNum);
 
         WindowedStream<Event, Integer, TimeWindow> timedWindowStream =
-                keyedByIdHash.timeWindow(Time.seconds(10));
+                keyedByIdHash.timeWindow(Time.seconds(FlinkApp.windowDurationTime));
 
         DataStream<SessionAggregate> timeIntervals =
                 timedWindowStream.trigger(ProcessingTimeTrigger.create())

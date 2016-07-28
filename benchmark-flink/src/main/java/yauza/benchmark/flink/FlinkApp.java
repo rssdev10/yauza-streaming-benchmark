@@ -20,7 +20,8 @@ import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
 public class FlinkApp {
-    public static final int partNum = 3;
+    public static int partNum = 3;
+    public static int windowDurationTime = 10;
     public static final int emergencyTriggerTimeout = 3;
 
     private static Gson gson = new Gson(); 
@@ -49,6 +50,9 @@ public class FlinkApp {
 
         kafkaProps.put("enable.auto.commit", "false");
         kafkaProps.put("auto.offset.reset", "smallest");
+
+        partNum = Integer.parseInt(config.getProperty(Config.PROP_PARTITIONS_NUMBER, "3"));
+        windowDurationTime = Integer.parseInt(config.getProperty(Config.PROP_WINDOW_DURATION, "10"));
 
         DataStream<String> dataStream = env
                 .addSource(new FlinkKafkaConsumer08<String>(

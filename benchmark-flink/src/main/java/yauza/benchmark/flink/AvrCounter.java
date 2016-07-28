@@ -42,7 +42,7 @@ public class AvrCounter {
                 .keyBy(event -> fieldAccessor.apply(event).intValue() % FlinkApp.partNum);
 
         WindowedStream<Event, Integer, TimeWindow> windowedStream =
-                streamOfNumerics.timeWindow(Time.seconds(10));
+                streamOfNumerics.timeWindow(Time.seconds(FlinkApp.windowDurationTime));
 
         DataStream<AverageAggregate> streamOfAverage =
                 windowedStream.trigger(ProcessingTimeTrigger.create())

@@ -45,7 +45,8 @@ public class UniqItems {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
                 .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % FlinkApp.partNum);
 
-        WindowedStream<Event, Integer, TimeWindow> uniqUsersWin = userIdKeyed.timeWindow(Time.seconds(10));
+        WindowedStream<Event, Integer, TimeWindow> uniqUsersWin =
+                userIdKeyed.timeWindow(Time.seconds(FlinkApp.windowDurationTime));
 
         DataStream<UniqAggregator> uniqUsers = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
                 .fold(new UniqAggregator(), new FoldFunction<Event, UniqAggregator>() {
