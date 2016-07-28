@@ -17,6 +17,9 @@ public class Config {
     public static final String PROP_BOOTSTRAP_SERVERS = "bootstrap.servers";
     public static final String PROP_ZOOKEEPER = "zookeeper.connect";
 
+    public static final String PROP_PARTITIONS_NUMBER = "benchmark.runtime.partitions.number";
+    public static final String PROP_WINDOW_DURATION = "benchmark.runtime.window.duration";
+
     private Properties properties = null;
 
     public Config() {
