@@ -1,6 +1,6 @@
 #!/usr/bin/sh
 
-ROOT_DIR=`realpath $(dirname "$0")/..`
+ROOT_DIR=`readlink -f $(dirname "$0")/..`
 CONF_DIR=$ROOT_DIR/conf
 OUT_DIR=${ROOT_DIR}/output
 
