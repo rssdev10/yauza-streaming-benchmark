@@ -61,6 +61,9 @@ public class Loader {
             //dataStream.print();
 
             env.execute();
+        } else if (mode.equals("inmemory")) {
+            new DirectKafkaUploader(config,
+                    config.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME)).run();
         } else {
             printHelpMessage();
         }
@@ -79,7 +82,9 @@ public class Loader {
                         " --topic <Kafka topic>" +
                         " --bootstrap.servers <kafka brokers>" +
                         " --benchmark.hdfs hdfs://localhost:9000" +
-                        " --benchmark.datafile datafile.json\n"
+                        " --benchmark.datafile datafile.json\n" +
+
+                        " data-generator --mode inmemory --config conf/benchmark.conf"
         );
     }
 }
