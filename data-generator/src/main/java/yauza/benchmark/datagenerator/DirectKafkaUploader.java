@@ -25,13 +25,16 @@ public class DirectKafkaUploader implements Runnable {
         Properties props = config.getKafkaProperties();
         producer = new KafkaProducer<>(props);
 
+        Long messagesNumber = Long.parseLong(
+                config.getProperties().getProperty(
+                        "benchmark.messages.number", Long.toString(HdfsWriter.eventsNum)));
+
         final int limitPerSecond =
                 Integer.parseInt(config.getProperties().getProperty(
                 "benchmark.messages.per.second", Long.toString(HdfsWriter.eventsNum)));
 
         long time = System.currentTimeMillis();
-        int messages = 0;
-        while (true) {
+        for (int counter = 0, messages = 0; counter < messagesNumber; counter++) {
             messages++;
             String value = DummyEvent.generateJSON();
             producer.send(new ProducerRecord<>(topic, value));
