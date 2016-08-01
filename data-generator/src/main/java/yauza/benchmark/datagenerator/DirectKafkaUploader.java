@@ -34,7 +34,7 @@ public class DirectKafkaUploader implements Runnable {
                 "benchmark.messages.per.second", Long.toString(HdfsWriter.eventsNum)));
 
         long time = System.currentTimeMillis();
-        for (int counter = 0, messages = 0; counter < messagesNumber; counter++) {
+        for (long counter = 0, messages = 0; counter < messagesNumber; counter++) {
             messages++;
             String value = DummyEvent.generateJSON();
             producer.send(new ProducerRecord<>(topic, value));
