@@ -1,5 +1,5 @@
 /*
- * Flink benchmark project
+ * Spark benchmark project
  */
 
 rootProject.name = 'benchmark-spark'
