@@ -8,7 +8,7 @@ import yauza.benchmark.common.helpers.DummyEvent;
 import java.util.Properties;
 
 public class DirectKafkaUploader implements Runnable {
-    private static long INTERVAL_MS = 1000;
+    private static final long INTERVAL_MS = 1000;
 
     private final String topic;
     private final Config config;
@@ -39,7 +39,8 @@ public class DirectKafkaUploader implements Runnable {
             String value = DummyEvent.generateJSON();
             producer.send(new ProducerRecord<>(topic, value));
 
-            if (messages >= limitPerSecond) {
+            // ignore limit if limitPerSecond is zero
+            if (limitPerSecond > 0 && messages >= limitPerSecond) {
                 long curTime = System.currentTimeMillis();
                 if (Math.abs(curTime - time) < INTERVAL_MS) {
                     try {
