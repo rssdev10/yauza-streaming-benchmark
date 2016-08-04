@@ -36,6 +36,7 @@ object YauzaSetup {
     // benchmark
     val benchmark = "benchmark"
     val datagenerator = "data-generator"
+    val datagenerator_in_memory = "data-generator-in-memory"
     val benchmark_flink = "benchmark-flink"
 
     val results_collector = "processing of results"
@@ -116,11 +117,17 @@ object YauzaSetup {
       s"""apache-storm-${VER(storm)}.tar.gz""",
       s"""$apacheMirror/storm/apache-storm-${VER(storm)}""") {
       override def start: Unit = {
-
+          startIfNeeded("daemon.name=nimbus", "Storm Nimbus", 3, s"$dirName/bin/storm", "nimbus");
+          startIfNeeded("start_if_needed daemon.name=supervisor", "Storm Supervisor", 3, s"$dirName/bin/storm", "supervisor");
+          startIfNeeded("start_if_needed daemon.name=ui", "Storm UI", 3, s"$dirName/bin/storm", "ui");
+          startIfNeeded("start_if_needed daemon.name=logviewer", "Storm LogViewer", 3, s"$dirName/bin/storm", "logviewer");
       }
 
       override def stop: Unit = {
-
+          stopIfNeeded("daemon.name=nimbus", "Storm Nimbus");
+          stopIfNeeded("daemon.name=supervisor", "Storm Supervisor");
+          stopIfNeeded("daemon.name=ui", "Storm UI");
+          stopIfNeeded("daemon.name=logviewer", "Storm LogViewer");
       }
     },
 
@@ -171,7 +178,7 @@ object YauzaSetup {
       }
 
       override def stop: Unit = {
-        stopIfNeeded(fileName, benchmark_flink)
+        stopIfNeeded(fileName, datagenerator)
       }
 
       override def config(phase:String): Unit = {
@@ -180,6 +187,23 @@ object YauzaSetup {
         s"""java -jar $dirName/$fileName --mode generate_file""" !
       }
     },
+
+    datagenerator_in_memory -> new Product(
+    "./bin",
+    s"""data-generator-${VER(benchmark)}-all.jar""",
+    "") {
+    override def start: Unit = {
+      // non waiting
+      s"""java -jar $dirName/$fileName --mode inmemory --config conf/benchmark.conf""" run;
+    }
+
+    override def stop: Unit = {
+      stopIfNeeded(fileName, datagenerator_in_memory)
+    }
+
+    override def config(phase:String): Unit = {
+    }
+  },
 
     benchmark_flink -> new Product(
       "./bin",
@@ -279,10 +303,45 @@ object YauzaSetup {
       //Thread sleep TIME_OF_TEST
       //products(benchmark_spark).stop
 
-      start(Seq(results_collector))
+      //start(Seq(results_collector))
 
       //stop(seq.filter(x => x != benchmark_spark))
     }),
+
+    "test_storm" -> (() => {
+      // try to run Storm
+      val seq = Array(
+        zookeeper,
+        //hadoop,
+        kafka,
+        storm,
+
+        delay,
+
+        //benchmark_spark
+
+        datagenerator_in_memory
+      )
+
+      start(seq)
+
+      //Thread sleep TIME_OF_TEST
+      //products(benchmark_spark).stop
+
+      //start(Seq(results_collector))
+
+      //stop(seq.filter(x => x != benchmark_spark))
+    }),
+
+    "start_kafka" -> (() => {
+      // try to run Kafka
+      val seq = Array(
+        zookeeper,
+        kafka
+      )
+      start(seq)
+    }),
+
 
     "stop_all" -> (() => {
       val seq = Array(

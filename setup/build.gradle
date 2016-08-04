@@ -56,6 +56,20 @@ task test_spark(type: JavaExec, dependsOn: classes) {
     classpath configurations.runtime
 }
 
+task test_storm(type: JavaExec, dependsOn: classes) {
+    args 'test_storm'
+
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    workingDir("../")
+    main = 'YauzaSetup'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
 task test_data_prepare(type: JavaExec, dependsOn: classes) {
     args 'test_data_prepare'
 
@@ -72,6 +86,20 @@ task test_data_prepare(type: JavaExec, dependsOn: classes) {
 
 task stop_all(type: JavaExec, dependsOn: classes) {
     args 'stop_all'
+
+    // copy versions of packages
+    ver.each {
+        k,v -> environment[k] = v
+    }
+
+    workingDir("../")
+    main = 'YauzaSetup'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
+task start_kafka(type: JavaExec, dependsOn: classes) {
+    args 'start_kafka'
 
     // copy versions of packages
     ver.each {

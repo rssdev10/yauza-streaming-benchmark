@@ -25,6 +25,7 @@ ext {
 
         'scala': '2.11',
         'scala-lib': '2.11.8',
-        'spark': '2.0.0-preview'
+        'spark': '2.0.0-preview',
+        'storm': '1.0.1'
     ]
 }
