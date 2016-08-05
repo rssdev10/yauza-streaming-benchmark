@@ -1,0 +1,48 @@
+/*
+ * This is Storm streaming benchmark project
+ */
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+
+    compile "org.apache.storm:storm-core:${ver.'storm'}"
+    compile "org.apache.storm:storm-kafka:${ver.'storm'}"
+
+    compile "commons-cli:commons-cli:${ver.'commons-cli'}"
+    //compile "org.scala-lang:scala-library:" + ver.'scala-lib'
+
+    compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka8}"
+}
+
+/*
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'yauza.benchmark.flink.StormBenchmark'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    destinationDir = new File("./bin/")
+}
+*/
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    }
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'yauza.benchmark.storm.StormBenchmark'
+    }
+
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer) {
+        resource = 'reference.conf'
+    }
+    destinationDir = new File("./bin/")
+}
