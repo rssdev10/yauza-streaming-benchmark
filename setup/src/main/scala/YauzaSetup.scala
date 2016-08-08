@@ -261,17 +261,27 @@ object YauzaSetup {
 
     "test_flink" -> (() => {
       // try to run Flink
+//      val seq = Array(
+//        zookeeper,
+//        hadoop,
+//        kafka,
+//        flink,
+//
+//        delay,
+//
+//        datagenerator,
+//
+//        benchmark_flink
+//      )
+
       val seq = Array(
         zookeeper,
-        hadoop,
         kafka,
         flink,
-
         delay,
-
-        datagenerator,
-
-        benchmark_flink
+        benchmark_flink,
+        delay,
+        datagenerator_in_memory
       )
 
       start(seq)
