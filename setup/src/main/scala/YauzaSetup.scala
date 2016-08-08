@@ -97,10 +97,11 @@ object YauzaSetup {
         startIfNeeded("kafka.Kafka", kafka, 10,
           s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
 
-        val count = s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $inputTopic 2>/dev/null""" #| s"grep -c $inputTopic" !
+        val count = (s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $inputTopic 2>/dev/null""" !!)
+          .split("\n").find(str => str.contains(inputTopic)).size
 
-        if (count.toInt == 0) {
-          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $inputTopic""" !
+        if (count == 0) {
+          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $inputTopic""" !!
         } else {
           println(s"Kafka topic $inputTopic already exists")
         }
