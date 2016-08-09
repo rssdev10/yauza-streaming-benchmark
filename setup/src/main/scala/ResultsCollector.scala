@@ -1,7 +1,9 @@
 package yauza.benchmark
 
+import java.io.{File, PrintWriter}
+import java.text.SimpleDateFormat
 import java.util
-import java.util.{Collections, Date, Properties}
+import java.util.{Calendar, Collections, Date, Properties}
 
 import com.google.gson.Gson
 import kafka.consumer.KafkaStream
@@ -24,7 +26,7 @@ object ResultsCollector {
     val config:Config = new Config("conf/benchmark.conf")
     val kafkaProps = config.getKafkaProperties()
 
-    Array(
+    val result = Array(
       "uniq-users-number",
       "uniq-sessions-number",
       "avr-price",
@@ -48,8 +50,23 @@ object ResultsCollector {
       .filter(_.totalProcessed > 0)
       .map(experiment => {
         gson.toJson(experiment)
-      })
-      .foreach(println)
+      }).mkString(",\n")
+
+    try {
+      new File(Config.OUTPUT_DIR).mkdirs()
+
+      val now = Calendar.getInstance().getTime()
+      val formatter = new SimpleDateFormat("yyyyMMdd-HHmmss")
+
+      val pw = new PrintWriter(new File(s"${Config.OUTPUT_DIR}/results-${formatter.format(now)}.json"))
+      pw.write(s"{'result':[\n$result\n]}")
+      pw.close
+
+    } catch {
+      case e:Exception =>
+        e.printStackTrace()
+        print(result)
+    }
   }
 
   class Consumer (val topic: String, val props:Properties) {
