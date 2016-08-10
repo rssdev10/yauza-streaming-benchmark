@@ -31,6 +31,8 @@ object YauzaSetup {
     val spark = "spark"
     val hadoop = "hadoop"
 
+    val dstat = "dstat"
+
     val delay = "delay"
 
     // benchmark
@@ -228,6 +230,16 @@ object YauzaSetup {
       }
     },
 
+    dstat -> new Product("scripts", dstat, "") {
+      override def start: Unit = {
+        s"$dirName/dstat_start.sh" !
+      }
+
+      override def stop: Unit = {
+        s"$dirName/dstat_stop.sh" !
+      }
+    },
+
     results_collector -> new Product(
       "", "", "") {
       override def start: Unit = {
@@ -278,7 +290,9 @@ object YauzaSetup {
         zookeeper,
         kafka,
         flink,
+        dstat,
         delay,
+
         benchmark_flink,
         delay,
         datagenerator_in_memory
