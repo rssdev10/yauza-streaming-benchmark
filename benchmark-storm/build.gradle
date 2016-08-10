@@ -17,7 +17,7 @@ dependencies {
 /*
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Main-Class': 'yauza.benchmark.flink.StormBenchmark'
+        attributes 'Main-Class': 'yauza.benchmark.storm.StormBenchmark'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
