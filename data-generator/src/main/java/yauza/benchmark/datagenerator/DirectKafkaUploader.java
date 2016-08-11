@@ -29,9 +29,15 @@ public class DirectKafkaUploader implements Runnable {
                 config.getProperties().getProperty(
                         "benchmark.messages.number", Long.toString(HdfsWriter.eventsNum)));
 
-        final int limitPerSecond =
+        int limitPerSecond =
                 Integer.parseInt(config.getProperties().getProperty(
                 "benchmark.messages.per.second", Long.toString(HdfsWriter.eventsNum)));
+
+        final int parallelThreads =
+                Integer.parseInt(config.getProperties().getProperty(
+                        Config.PROP_DATA_DIRECTUPLOADER_THREADS, Long.toString(2)));
+
+        limitPerSecond = limitPerSecond / parallelThreads;
 
         long time = System.currentTimeMillis();
         for (long counter = 0, messages = 0; counter < messagesNumber; counter++) {

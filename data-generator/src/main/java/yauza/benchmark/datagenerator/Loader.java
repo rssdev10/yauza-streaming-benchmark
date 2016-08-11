@@ -96,8 +96,21 @@ public class Loader {
 
             env.execute();
         } else if (mode.equals("inmemory")) {
-            new DirectKafkaUploader(config,
-                    config.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME)).run();
+            DirectKafkaUploader directUploader = new DirectKafkaUploader(config,
+                    config.getProperty(Config.INPUT_TOPIC_PROP_NAME, Config.INPUT_TOPIC_NAME));
+
+            final int parallelThreads =
+                    Integer.parseInt(config.getProperties().getProperty(
+                            Config.PROP_DATA_DIRECTUPLOADER_THREADS, Long.toString(2)));
+
+            Thread threads[] = new Thread[parallelThreads];
+            for (int i = 0; i < threads.length; i++) {
+                threads[i] = new Thread(directUploader);
+                threads[i].start();
+            }
+            for (int i = 0; i < threads.length; i++) {
+                threads[i].wait();
+            }
         } else {
             printHelpMessage();
         }

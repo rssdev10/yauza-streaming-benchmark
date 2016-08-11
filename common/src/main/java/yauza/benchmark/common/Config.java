@@ -22,6 +22,8 @@ public class Config {
     public static final String PROP_PARTITIONS_NUMBER = "benchmark.runtime.partitions.number";
     public static final String PROP_WINDOW_DURATION = "benchmark.runtime.window.duration";
 
+    public static final String PROP_DATA_DIRECTUPLOADER_THREADS = "benchmark.datagenerator.directuploader.threads";
+
     private Properties properties = null;
 
     public Config() {
