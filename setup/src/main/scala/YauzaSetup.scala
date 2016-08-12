@@ -121,9 +121,9 @@ object YauzaSetup {
       s"""$apacheMirror/storm/apache-storm-${VER(storm)}""") {
       override def start: Unit = {
           startIfNeeded("daemon.name=nimbus", "Storm Nimbus", 3, s"$dirName/bin/storm", "nimbus");
-          startIfNeeded("start_if_needed daemon.name=supervisor", "Storm Supervisor", 3, s"$dirName/bin/storm", "supervisor");
-          startIfNeeded("start_if_needed daemon.name=ui", "Storm UI", 3, s"$dirName/bin/storm", "ui");
-          startIfNeeded("start_if_needed daemon.name=logviewer", "Storm LogViewer", 3, s"$dirName/bin/storm", "logviewer");
+          startIfNeeded("daemon.name=supervisor", "Storm Supervisor", 3, s"$dirName/bin/storm", "supervisor");
+          startIfNeeded("daemon.name=ui", "Storm UI", 3, s"$dirName/bin/storm", "ui");
+          startIfNeeded("daemon.name=logviewer", "Storm LogViewer", 3, s"$dirName/bin/storm", "logviewer");
       }
 
       override def stop: Unit = {
@@ -315,7 +315,7 @@ object YauzaSetup {
         hadoop,
         kafka,
         //spark,
-
+        dstat,
         delay,
 
         datagenerator//,
@@ -339,13 +339,14 @@ object YauzaSetup {
         zookeeper,
         //hadoop,
         kafka,
-        storm,
+        storm//,
 
-        delay,
+        //delay,
 
-        //benchmark_spark
+        //benchmark_storm
 
-        datagenerator_in_memory
+        //datagenerator_in_memory
+
       )
 
       start(seq)
@@ -416,7 +417,9 @@ object YauzaSetup {
     if (pid.nonEmpty) {
       println( name + " is already running...")
     } else {
-      args.mkString(" ").run()
+      val cmd = args.mkString(" ")
+      println(cmd)
+      cmd run;
       Thread sleep(sleepTime * 1000)
     }
   }
@@ -449,6 +452,9 @@ object YauzaSetup {
   }
 
   abstract class Product(val dirName: String, val fileName: String, val urlPath: String){
+
+    val fullDirName = curDir + "/" + dirName
+
     def downloadAndUntar() = {
       val localFile = s"download-cache/$fileName"
       val url = urlPath + "/" + fileName

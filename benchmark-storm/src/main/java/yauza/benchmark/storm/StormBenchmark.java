@@ -20,6 +20,8 @@ import org.apache.storm.trident.operation.TridentCollector;
 import org.apache.storm.trident.operation.TridentOperationContext;
 import org.apache.storm.trident.operation.builtin.Debug;
 import org.apache.storm.trident.tuple.TridentTuple;
+import org.apache.storm.trident.windowing.InMemoryWindowsStoreFactory;
+import org.apache.storm.trident.windowing.WindowsStoreFactory;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import yauza.benchmark.common.Config;
@@ -33,14 +35,15 @@ import java.util.Properties;
 public class StormBenchmark {
     public static int partNum = 3;
     public static int windowDurationTime = 10;
-    public static final int emergencyTriggerTimeout = 3;
 
-    private static Gson gson = new Gson();
+    public static final WindowsStoreFactory mapState = new InMemoryWindowsStoreFactory();
+
+    private static final Gson gson = new Gson();
 
     public static org.apache.storm.Config getConsumerConfig() {
         org.apache.storm.Config conf = new org.apache.storm.Config();
         conf.setMaxSpoutPending(20);
-          conf.setDebug(true);
+        //  conf.setDebug(true);
         return conf;
     }
 
@@ -163,7 +166,8 @@ public class StormBenchmark {
 
         HashMap<String, Stream> result = new HashMap<>();
 
-        Stream eventStream = stream.each(new Fields("str"), new DeserializeEvent(), new Fields("event"));
+        Stream eventStream = stream.each(new Fields("str"), new DeserializeEvent(), new Fields("event"))
+                .project(new Fields("event"));
 
         result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));

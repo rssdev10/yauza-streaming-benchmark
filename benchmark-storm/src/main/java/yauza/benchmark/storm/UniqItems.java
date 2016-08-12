@@ -1,13 +1,21 @@
 package yauza.benchmark.storm;
 
+import org.apache.storm.topology.base.BaseWindowedBolt;
 import org.apache.storm.trident.Stream;
-import org.apache.storm.trident.operation.BaseFunction;
-import org.apache.storm.trident.operation.TridentCollector;
+import org.apache.storm.trident.operation.*;
 import org.apache.storm.trident.tuple.TridentTuple;
+import org.apache.storm.trident.windowing.config.TumblingDurationWindow;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import yauza.benchmark.common.Event;
+import yauza.benchmark.common.Product;
 import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorString;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements aggregation by specified field and produces the number
@@ -17,6 +25,10 @@ import yauza.benchmark.common.accessors.FieldAccessorString;
 public class UniqItems {
 
     static class UniqAggregator extends Statistics {
+        public Set<String> uniqIds = new HashSet<String>();
+    }
+
+    static class ProductAggregator extends Statistics{
         public Integer value = 0;
     }
 
@@ -28,55 +40,112 @@ public class UniqItems {
      * @return new chained stream
      */
     public static Stream transform(Stream eventStream, FieldAccessorString fieldAccessor) {
-/*
-        JavaDStream<UniqAggregator> uniques = eventStream
-                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
-                .groupByKey(partNum)
-                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<Integer, Iterable<Event>>>, UniqAggregator>() {
-                    @Override
-                    public Iterator<UniqAggregator> call(Iterator<Tuple2<Integer, Iterable<Event>>> tuple2Iterator) throws Exception {
-                        UniqAggregator accumulator = new UniqAggregator();
-                        Set<String> uniqIds = new HashSet<String>();
-
-                        tuple2Iterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
+        return eventStream
+                .each(new Fields("event"),
+                        new BaseFunction() {
                             @Override
-                            public void accept(Tuple2<Integer, Iterable<Event>> value) {
-                                for (Event event: value._2()) {
-                                    uniqIds.add(fieldAccessor.apply(event));
+                            public void execute(TridentTuple tuple, TridentCollector collector) {
+                                Event event = (Event) tuple.get(0);
 
-                                    accumulator.registerEvent(event);
-                                }
+                                collector.emit(new Values(fieldAccessor.apply(event)));
                             }
-                        });
-                        accumulator.value = uniqIds.size();
+                        },
+                        new Fields("key")
+                )
+                .parallelismHint(StormBenchmark.partNum)
+                .partitionBy(new Fields("key"))
+                .window(TumblingDurationWindow.of(new BaseWindowedBolt.Duration(StormBenchmark.windowDurationTime, TimeUnit.SECONDS)),
+                        StormBenchmark.mapState,
+                        new Fields("event"),
+                        new BaseAggregator<UniqAggregator>() {
+                            @Override
+                            public UniqAggregator init(Object batchId, TridentCollector collector) {
+                                return new UniqAggregator();
+                            }
 
-                        List<UniqAggregator> list = Arrays.asList(accumulator);
-                        return list.iterator();
-                    }
-                })
-                .repartition(1);
+                            @Override
+                            public void aggregate(UniqAggregator accumulator, TridentTuple tuple, TridentCollector collector) {
+                                Event event = (Event) tuple.get(0);
+                                accumulator.uniqIds.add(fieldAccessor.apply(event));
+                                accumulator.registerEvent(event);
+                            }
 
-        return uniques
-                .reduce((x1, x2) -> {
-                    x1.value += x2.value;
+                            @Override
+                            public void complete(UniqAggregator val, TridentCollector collector) {
+                                collector.emit(new Values(val));
+                            }
+                        },
+                        new Fields("part_aggr")
+                )
+                .project(new Fields("part_aggr"))
+//                .peek(new Consumer() {
+//                    @Override
+//                    public void accept(TridentTuple input) {
+//                        System.out.print(input.get(0).toString());
+//                    }
+//                })
+                .each(new Fields("part_aggr"),
+                        new BaseFunction() {
+                            @Override
+                            public void execute(TridentTuple tuple, TridentCollector collector) {
+                                UniqAggregator part = (UniqAggregator) tuple.get(0);
 
-                    x1.summarize(x2);
+                                ProductAggregator product = new ProductAggregator();
+                                product.value = part.uniqIds.size();
 
-                    return x1;
-                })
-                .map(aggregator -> {
-                    Product product = new Product("UniqItems", aggregator.value.toString());
-                    product.setStatistics(aggregator);
-                    return product.toString();
-                });*/
+                                product.summarize(part);
 
-        return eventStream.each(new Fields("event"),
-                new BaseFunction() {
+                                collector.emit(new Values(product));
+                            }
+                        },
+                        new Fields("part_aggr_num")
+                )
+                .aggregate(new Fields("part_aggr_num"),
+                        new ReducerAggregator<ProductAggregator>() {
+                            @Override
+                            public ProductAggregator init() {
+                                return new ProductAggregator();
+                            }
+
+                            @Override
+                            public ProductAggregator reduce(ProductAggregator accumulator, TridentTuple tuple) {
+                                ProductAggregator  part = (ProductAggregator ) tuple.get(0);
+                                accumulator.value += part.value;
+
+                                accumulator.summarize(part);
+
+                                return accumulator;
+                            }
+                        },
+                        new Fields("full_aggregate"))
+                .filter(new Fields("full_aggregate"), new Filter() {
                     @Override
-                    public void execute(TridentTuple tuple, TridentCollector collector) {
-                        collector.emit(new Values(tuple.get(0).toString()));
+                    public boolean isKeep(TridentTuple tuple) {
+                        ProductAggregator aggregator = (ProductAggregator) tuple.get(0);
+                        return aggregator.count != 0;
                     }
-                },
-                new Fields("result"));
+
+                    @Override
+                    public void prepare(Map conf, TridentOperationContext context) {
+
+                    }
+
+                    @Override
+                    public void cleanup() {
+
+                    }
+                })
+                .each(new Fields("full_aggregate"),
+                        new BaseFunction() {
+                            @Override
+                            public void execute(TridentTuple tuple, TridentCollector collector) {
+                                ProductAggregator x = (ProductAggregator) tuple.get(0);
+                                Product product = new Product("UniqItems", Integer.toString(x.value));
+                                product.setStatistics(x);
+                                collector.emit(new Values(product.toString()));
+                            }
+                        },
+                        new Fields("result"))
+                .project(new Fields("result"));
     }
 }
