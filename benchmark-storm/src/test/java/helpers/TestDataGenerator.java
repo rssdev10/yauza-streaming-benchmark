@@ -9,22 +9,23 @@ import org.apache.storm.tuple.Values;
 import yauza.benchmark.common.helpers.DummyEvent;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestDataGenerator extends BaseRichSpout {
     private static final int eventsNum = 1000;// * 1000 * 10;
     private SpoutOutputCollector _collector;
-    private int generatedEvents = 0;
+    private static AtomicLong generatedEvents = new AtomicLong(0);
 
     @Override
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         _collector = collector;
+        System.out.println(this);
     }
 
     @Override
     public void nextTuple() {
-        if (generatedEvents < eventsNum) {
+        if (generatedEvents.getAndIncrement() < eventsNum) {
             String element = DummyEvent.generateJSON();
-            generatedEvents++;
 
             if (element != null)
                 _collector.emit(new Values(element));
