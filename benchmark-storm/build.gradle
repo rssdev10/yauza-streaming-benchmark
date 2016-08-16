@@ -11,7 +11,10 @@ dependencies {
     compile "commons-cli:commons-cli:${ver.'commons-cli'}"
     //compile "org.scala-lang:scala-library:" + ver.'scala-lib'
 
-    compile "org.apache.kafka:kafka_${ver.scala}:${ver.kafka8}"
+    compile("org.apache.kafka:kafka_${ver.scala}:${ver.kafka8}") {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'log4j', module: 'log4j'
+    }
 }
 
 /*
