@@ -27,6 +27,7 @@ import org.apache.storm.tuple.Values;
 import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,17 +82,21 @@ public class StormBenchmark {
         group.addOption(new Option("config", "config", true, "Configuration file name."));
         opts.addOptionGroup(group);
 
-        if (args.length == 0) {
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("benchmark-storm", opts, true);
-            System.exit(1);
-        }
-
         //CommandLineParser parser = new DefaultParser();
         CommandLineParser parser = new PosixParser();
         CommandLine cmd = parser.parse(opts, args);
 
         String confFilename = cmd.getOptionValue("config");
+
+        if (args.length == 0) {
+            if (new File(Config.CONFIF_FILE_NAME).isFile()) {
+                confFilename = Config.CONFIF_FILE_NAME;
+            } else {
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("benchmark-storm", opts, true);
+                System.exit(1);
+            }
+        }
 
         Properties props = new Properties();
         Arrays.asList(cmd.getOptions()).forEach(x -> {
@@ -155,7 +160,7 @@ public class StormBenchmark {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("benchmark", getConsumerConfig(), tridentTopology.build());
 
-        Thread.sleep(60 * 1000);
+        Thread.sleep(Integer.parseInt(config.getProperty(Config.PROP_TEST_DURATION, "60")) * 1000);
 
         cluster.killTopology("benchmark");
         cluster.shutdown();

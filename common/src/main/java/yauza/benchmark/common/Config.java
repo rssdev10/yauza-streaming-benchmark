@@ -24,6 +24,8 @@ public class Config {
 
     public static final String PROP_DATA_DIRECTUPLOADER_THREADS = "benchmark.datagenerator.directuploader.threads";
 
+    public static final String PROP_TEST_DURATION = "benchmark.runtime.duration";
+
     private Properties properties = null;
 
     public Config() {
