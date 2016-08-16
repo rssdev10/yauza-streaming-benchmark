@@ -52,8 +52,8 @@ public class UniqItems {
                         },
                         new Fields("key")
                 )
-                .parallelismHint(StormBenchmark.partNum)
                 .partitionBy(new Fields("key"))
+                .parallelismHint(StormBenchmark.partNum)
                 .window(TumblingDurationWindow.of(new BaseWindowedBolt.Duration(StormBenchmark.windowDurationTime, TimeUnit.SECONDS)),
                         StormBenchmark.mapState,
                         new Fields("event"),
@@ -77,6 +77,7 @@ public class UniqItems {
                         },
                         new Fields("part_aggr")
                 )
+                .name("uid_win_part_aggr")
                 .project(new Fields("part_aggr"))
 //                .peek(new Consumer() {
 //                    @Override
@@ -85,6 +86,8 @@ public class UniqItems {
 //                    }
 //                })
                 .each(new Fields("part_aggr"),
+                        // gathering all partial aggregates from all partitions
+                        // TODO: check it again when Storm Trident supports partitioning in windows.
                         new BaseFunction() {
                             @Override
                             public void execute(TridentTuple tuple, TridentCollector collector) {
@@ -100,6 +103,7 @@ public class UniqItems {
                         },
                         new Fields("part_aggr_num")
                 )
+                .project(new Fields("part_aggr_num"))
                 .aggregate(new Fields("part_aggr_num"),
                         new ReducerAggregator<ProductAggregator>() {
                             @Override
@@ -118,10 +122,11 @@ public class UniqItems {
                             }
                         },
                         new Fields("full_aggregate"))
+                .name("uid_full_aggregate")
                 .filter(new Fields("full_aggregate"), new Filter() {
                     @Override
                     public boolean isKeep(TridentTuple tuple) {
-                        ProductAggregator aggregator = (ProductAggregator) tuple.get(0);
+                        Statistics aggregator = (Statistics) tuple.get(0);
                         return aggregator.count != 0;
                     }
 

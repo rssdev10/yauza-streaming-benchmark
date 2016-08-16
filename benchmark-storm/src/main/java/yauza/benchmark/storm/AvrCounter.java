@@ -1,13 +1,19 @@
 package yauza.benchmark.storm;
 
+import org.apache.storm.topology.base.BaseWindowedBolt;
 import org.apache.storm.trident.Stream;
-import org.apache.storm.trident.operation.BaseFunction;
-import org.apache.storm.trident.operation.TridentCollector;
+import org.apache.storm.trident.operation.*;
 import org.apache.storm.trident.tuple.TridentTuple;
+import org.apache.storm.trident.windowing.config.TumblingDurationWindow;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import yauza.benchmark.common.Event;
+import yauza.benchmark.common.Product;
 import yauza.benchmark.common.Statistics;
 import yauza.benchmark.common.accessors.FieldAccessorLong;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements aggregation by specified field and calculation of
@@ -31,58 +37,107 @@ public class AvrCounter {
      * @return new chained stream
      */
     public static Stream transform(Stream eventStream, FieldAccessorLong fieldAccessor) {
-/*
-        JavaDStream<AverageAggregate> avrByPartitions = eventStream
-                .repartition(partNum)
-                .mapPartitions(eventIterator -> {
-                    AverageAggregate accumulator = new AverageAggregate();
-                    eventIterator.forEachRemaining(new Consumer<Event>() {
-                        @Override
-                        public void accept(Event value) {
-                            long count = accumulator.count;
-                            long countNext = count + 1;
-                            accumulator.average =
-                                    accumulator.average * (count / (double) countNext) +
-                                            fieldAccessor.apply(value) / (double) countNext;
+        return eventStream
+                .each(new Fields("event"),
+                        new BaseFunction() {
+                            @Override
+                            public void execute(TridentTuple tuple, TridentCollector collector) {
+                                Event event = (Event) tuple.get(0);
 
-                            accumulator.registerEvent(value);
-                        }
-                    });
+                                collector.emit(new Values(fieldAccessor.apply(event)));
+                            }
+                        },
+                        new Fields("key")
+                )
+                .partitionBy(new Fields("key"))
+                .parallelismHint(StormBenchmark.partNum)
+                .window(TumblingDurationWindow.of(new BaseWindowedBolt.Duration(StormBenchmark.windowDurationTime, TimeUnit.SECONDS)),
+                        StormBenchmark.mapState,
+                        new Fields("event"),
+                        new BaseAggregator<AverageAggregate>() {
+                            @Override
+                            public AverageAggregate init(Object batchId, TridentCollector collector) {
+                                return new AverageAggregate();
+                            }
 
-                    List<AverageAggregate> list = Arrays.asList(accumulator);
-                    return list.iterator();
-                })
-                .repartition(1);
+                            @Override
+                            public void aggregate(AverageAggregate val, TridentTuple tuple, TridentCollector collector) {
+                                Event event = (Event) tuple.get(0);
+                                long count = val.count;
+                                long countNext = count + 1;
+                                val.average =
+                                        val.average * (count / (double) countNext) +
+                                                fieldAccessor.apply(event) / (double) countNext;
 
-        return avrByPartitions
-                .reduce((accumulator, value) -> {
-                    System.out.println(value.toString());
+                                val.registerEvent(event);
+                            }
 
-                    long countAcc = accumulator.count;
-                    long countVal = value.count;
-                    if (countAcc + value.count != 0) {
-                        accumulator.average = accumulator.average * (countAcc / (double)(countVal + countAcc))
-                                + value.average * (countVal / (double)(countAcc + countVal));
-                    }
+                            @Override
+                            public void complete(AverageAggregate val, TridentCollector collector) {
+                                collector.emit(new Values(val));
+                            }
+                        },
+                        new Fields("part_aggr")
+                )
+                .name("avr_win_part_aggr")
+                .project(new Fields("part_aggr"))
+                .aggregate(new Fields("part_aggr"),
+                        new ReducerAggregator<AverageAggregate>() {
+                            // gathering all partial aggregates from all partitions
+                            // TODO: check it again when Storm Trident supports partitioning in windows.
 
-                    accumulator.summarize(value);
-                    return accumulator;
-                })
-                .map(x -> {
-                    Product product = new Product(
-                            "AvrCounter",
-                            "Avr: " + Long.toString(round(x.average)) + "; num: " + Long.toString(x.count));
-                    product.setStatistics(x);
-                    return product.toString();
-                });*/
+                            @Override
+                            public AverageAggregate init() {
+                                return new AverageAggregate();
+                            }
 
-        return eventStream.each(new Fields("event"),
-                new BaseFunction() {
+                            @Override
+                            public AverageAggregate reduce(AverageAggregate accumulator, TridentTuple tuple) {
+                                AverageAggregate value = (AverageAggregate) tuple.get(0);
+                                long countAcc = accumulator.count;
+                                long countVal = value.count;
+                                if (countAcc + value.count != 0) {
+                                    accumulator.average = accumulator.average * (countAcc / (double)(countVal + countAcc))
+                                            + value.average * (countVal / (double)(countAcc + countVal));
+                                }
+                                
+                                accumulator.summarize(value);
+
+                                return accumulator;
+                            }
+                        },
+                        new Fields("full_aggregate"))
+                .name("avr_full_aggregate")
+                .filter(new Fields("full_aggregate"), new Filter() {
                     @Override
-                    public void execute(TridentTuple tuple, TridentCollector collector) {
-                        collector.emit(new Values(tuple.get(0).toString()));
+                    public boolean isKeep(TridentTuple tuple) {
+                        Statistics aggregator = (Statistics) tuple.get(0);
+                        return aggregator.count != 0;
                     }
-                },
-                new Fields("result"));
+
+                    @Override
+                    public void prepare(Map conf, TridentOperationContext context) {
+
+                    }
+
+                    @Override
+                    public void cleanup() {
+
+                    }
+                })
+                .each(new Fields("full_aggregate"),
+                        new BaseFunction() {
+                            @Override
+                            public void execute(TridentTuple tuple, TridentCollector collector) {
+                                AverageAggregate x = (AverageAggregate) tuple.get(0);
+                                Product product = new Product(
+                                        "AvrCounter",
+                                        "Avr: " + Long.toString(Math.round(x.average)) + "; num: " + Long.toString(x.count));
+                                product.setStatistics(x);
+                                collector.emit(new Values(product.toString()));
+                            }
+                        },
+                        new Fields("result"))
+                .project(new Fields("result"));
     }
 }
