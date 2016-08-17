@@ -80,15 +80,17 @@ object YauzaSetup {
       s"""spark-${VER(spark)}-bin-hadoop2.6.tgz""",
       s"""$apacheMirror/spark/spark-${VER(spark)}""") {
       override def start: Unit = {
-        startIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster", 5,
-          s"$dirName/sbin/start-master.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
-        startIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave", 5,
-          s"$dirName/sbin/start-slave.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
+//        startIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster", 5,
+//          s"$dirName/sbin/start-master.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
+//        startIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave", 5,
+//          s"$dirName/sbin/start-slave.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
+        s"$dirName/sbin/start-all.sh " !
       }
 
       override def stop: Unit = {
-        stopIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster")
-        stopIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave")
+//        stopIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster")
+//        stopIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave")
+        s"$dirName/sbin/stop-all.sh " !
       }
     },
 
@@ -224,7 +226,8 @@ object YauzaSetup {
       }
 
       override def stop: Unit = {
-        stopIfNeeded(fileName, benchmark_flink)
+//        stopIfNeeded(fileName, benchmark_flink)
+        products(flink).stop
       }
     },
 
@@ -236,13 +239,15 @@ object YauzaSetup {
         s"${products(spark).dirName}/bin/spark-submit" +
           " --master " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER) +
           " --class yauza.benchmark.spark.SparkBenchmark" +
-          s" $dirName/$fileName" !
+          s" $dirName/$fileName" run
       }
 
       override def stop: Unit = {
-        s"${products(spark).dirName}/bin/spark-class" +
-          " yauza.benchmark.spark.SparkBenchmark kill" +
-          " --master " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER) !
+//        s"${products(spark).dirName}/bin/spark-class" +
+//          " org.apache.spark.deploy.Client kill" +
+//          " --master " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER) +
+//          " <driver_id>"!
+        products(spark).stop
       }
     },
 
