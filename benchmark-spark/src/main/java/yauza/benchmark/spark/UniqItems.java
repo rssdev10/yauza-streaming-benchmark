@@ -43,6 +43,7 @@ public class UniqItems {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor) {
 
         JavaDStream<UniqAggregator> uniques = eventStream
+                .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
                 .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
                 .groupByKey(partNum)
                 .mapPartitions(new FlatMapFunction<Iterator<Tuple2<Integer, Iterable<Event>>>, UniqAggregator>() {

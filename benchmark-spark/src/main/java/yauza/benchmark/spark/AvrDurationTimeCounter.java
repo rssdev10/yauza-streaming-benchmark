@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
+import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import scala.Tuple2;
 import yauza.benchmark.common.Event;
@@ -69,6 +70,7 @@ public class AvrDurationTimeCounter {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorString fieldAccessor,
                                                 FieldAccessorLong timestampAccessor) {
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
+                .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
                 .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
                 .groupByKey(partNum)
                 .mapPartitions(eventIterator -> {

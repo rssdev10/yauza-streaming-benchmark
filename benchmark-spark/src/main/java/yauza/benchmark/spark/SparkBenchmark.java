@@ -5,7 +5,6 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.cli.*;
 import org.apache.spark.SparkConf;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.streaming.Milliseconds;
 import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.api.java.*;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -17,7 +16,6 @@ import java.util.*;
 public class SparkBenchmark {
     public static int partNum = 3;
     public static int windowDurationTime = 10;
-    public static final int emergencyTriggerTimeout = 3;
 
     private static Gson gson = new Gson(); 
 
@@ -148,7 +146,7 @@ public class SparkBenchmark {
             event.setInputTime();
             //System.out.print(json);
             return event;
-        }).window(Seconds.apply(windowDurationTime), Seconds.apply(windowDurationTime)).cache();
+        }).cache();
 
         result.put("uniq-users-number",
                 UniqItems.transform(eventStream, (event) -> event.getUserId()));

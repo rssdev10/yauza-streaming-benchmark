@@ -1,5 +1,6 @@
 package yauza.benchmark.spark;
 
+import org.apache.spark.streaming.Seconds;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import scala.Tuple2;
 import yauza.benchmark.common.Event;
@@ -38,6 +39,7 @@ public class AvrCounter {
     public static JavaDStream<String> transform(JavaDStream<Event> eventStream, FieldAccessorLong fieldAccessor) {
 
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
+                .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
                 .repartition(partNum)
                 .mapPartitions(eventIterator -> {
                     AverageAggregate accumulator = new AverageAggregate();
