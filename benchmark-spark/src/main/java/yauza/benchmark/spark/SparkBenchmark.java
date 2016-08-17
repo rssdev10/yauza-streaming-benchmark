@@ -11,6 +11,7 @@ import org.apache.spark.streaming.kafka.KafkaUtils;
 import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
+import java.io.File;
 import java.util.*;
 
 public class SparkBenchmark {
@@ -32,17 +33,21 @@ public class SparkBenchmark {
         group.addOption(new Option("config", "config", true, "Configuration file name."));
         opts.addOptionGroup(group);
 
-        if (args.length == 0) {
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("benchmark-spark", opts, true);
-            System.exit(1);
-        }
-
         //CommandLineParser parser = new DefaultParser();
         CommandLineParser parser = new PosixParser();
         CommandLine cmd = parser.parse(opts, args);
 
         String confFilename = cmd.getOptionValue("config");
+
+        if (args.length == 0) {
+            if (new File(Config.CONFIF_FILE_NAME).isFile()) {
+                confFilename = Config.CONFIF_FILE_NAME;
+            } else {
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("benchmark-spark", opts, true);
+                System.exit(1);
+            }
+        }
 
         Properties props = new Properties();
         Arrays.asList(cmd.getOptions()).forEach(x -> {
