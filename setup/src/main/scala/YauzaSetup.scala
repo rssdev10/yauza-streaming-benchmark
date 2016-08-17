@@ -40,6 +40,8 @@ object YauzaSetup {
     val datagenerator = "data-generator"
     val datagenerator_in_memory = "data-generator-in-memory"
     val benchmark_flink = "benchmark-flink"
+    val benchmark_spark = "benchmark-spark"
+    val benchmark_storm = "benchmark-storm"
 
     val results_collector = "processing of results"
   }
@@ -78,8 +80,10 @@ object YauzaSetup {
       s"""spark-${VER(spark)}-bin-hadoop2.6.tgz""",
       s"""$apacheMirror/spark/spark-${VER(spark)}""") {
       override def start: Unit = {
-        startIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster", 5, s"""$dirName/sbin/start-master.sh -h localhost -p 7077""")
-        startIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave", 5, s"""$dirName/sbin/start-slave.sh spark://localhost:7077""")
+        startIfNeeded("org.apache.spark.deploy.master.Master", "SparkMaster", 5,
+          s"$dirName/sbin/start-master.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
+        startIfNeeded("org.apache.spark.deploy.worker.Worker", "SparkSlave", 5,
+          s"$dirName/sbin/start-slave.sh " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER))
       }
 
       override def stop: Unit = {
@@ -224,6 +228,24 @@ object YauzaSetup {
       }
     },
 
+    benchmark_spark -> new Product(
+      "./bin",
+      s"""benchmark-spark-${VER(benchmark)}-all.jar""",
+      "") {
+      override def start: Unit = {
+        s"${products(spark).dirName}/bin/spark-submit" +
+          " --master " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER) +
+          " --class yauza.benchmark.spark.SparkBenchmark" +
+          s" $dirName/$fileName" !
+      }
+
+      override def stop: Unit = {
+        s"${products(spark).dirName}/bin/spark-class" +
+          " yauza.benchmark.spark.SparkBenchmark kill" +
+          " --master " + props.getProperty(Config.PROP_SPARK_MASTER, Config.DEFAULT_SPARK_MASTER) !
+      }
+    },
+
     delay -> new Product(delay, "", "") {
       override def start: Unit = {
         Thread sleep 30 * 1000
@@ -310,27 +332,39 @@ object YauzaSetup {
 
     "test_spark" -> (() => {
       // try to run Spark
+//      val seq = Array(
+//        zookeeper,
+//        hadoop,
+//        kafka,
+//        //spark,
+//        dstat,
+//        delay,
+//
+//        datagenerator,
+//
+//        benchmark_spark
+//      )
+
       val seq = Array(
         zookeeper,
-        hadoop,
         kafka,
-        //spark,
+        spark,
         dstat,
         delay,
 
-        datagenerator//,
-
-        //benchmark_spark
+        benchmark_spark,
+        delay,
+        datagenerator_in_memory
       )
 
       start(seq)
 
-      //Thread sleep TIME_OF_TEST
-      //products(benchmark_spark).stop
+      Thread sleep TIME_OF_TEST
+      products(benchmark_spark).stop
 
-      //start(Seq(results_collector))
+      start(Seq(results_collector))
 
-      //stop(seq.filter(x => x != benchmark_spark))
+      stop(seq.filter(x => x != benchmark_spark))
     }),
 
     "test_storm" -> (() => {
@@ -371,6 +405,7 @@ object YauzaSetup {
 
     "stop_all" -> (() => {
       val seq = Array(
+        dstat,
         zookeeper,
         hadoop,
         kafka,
@@ -378,8 +413,7 @@ object YauzaSetup {
         spark,
         storm,
 
-        datagenerator,
-        benchmark_flink
+        datagenerator
       )
       seq.reverse.foreach(products(_).stop)
     })

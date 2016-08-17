@@ -26,6 +26,10 @@ public class Config {
 
     public static final String PROP_TEST_DURATION = "benchmark.runtime.duration";
 
+    public static final String PROP_SPARK_MASTER = "spark.master";
+
+    public static final String DEFAULT_SPARK_MASTER = "spark://localhost:7077";
+
     private Properties properties = null;
 
     public Config() {
