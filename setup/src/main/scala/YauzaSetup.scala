@@ -65,11 +65,11 @@ object YauzaSetup {
       s"""$apacheMirror/flink/flink-${VER(flink)}"""
     ) {
       override def start: Unit = {
-        startIfNeeded("org.apache.flink.runtime.jobmanager.JobManager", flink, 1, s"""$dirName/bin/start-local.sh""")
+        startIfNeeded("org.apache.flink.runtime.jobmanager.JobManager", flink, 1, s"""$dirName/bin/start-cluster.sh""")
       }
 
       override def stop: Unit = {
-        s"""$dirName/bin/stop-local.sh""" !
+        s"""$dirName/bin/stop-cluster.sh""" !
       }
     },
 
