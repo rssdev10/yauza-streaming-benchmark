@@ -135,9 +135,8 @@ public class StormBenchmark {
         TridentTopology tridentTopology = new TridentTopology();
 
         Stream dataStream = tridentTopology
-                .newStream("spout1", createKafkaSpout(hosts,topicList)).parallelismHint(1)
-                .each(new Fields("str"), new Debug());
-//                .each(new Fields("str"), new DeserializeEvent(), new Fields("event"));
+                .newStream("spout1", createKafkaSpout(hosts,topicList)).parallelismHint(1);
+//                .each(new Fields("str"), new Debug());
 
         Properties outProps = config.getKafkaProperties();
 
@@ -153,7 +152,8 @@ public class StormBenchmark {
                             Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey())))
                     .withTridentTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper(null, "result"));
 
-            stream.each(new Fields("result"), new Debug())
+            stream
+                    .each(new Fields("result"), new Debug())
                     .partitionPersist(stateFactory, new Fields("result"), new TridentKafkaUpdater());
         }
 

@@ -39,6 +39,11 @@ buildscript {
     }
 }
 
+configurations {
+    /* We don't want the storm-core dependency in our shadowJar */
+    runtime.exclude module: 'storm-core'
+}
+
 shadowJar {
     manifest {
         attributes 'Main-Class': 'yauza.benchmark.storm.StormBenchmark'
@@ -47,5 +52,6 @@ shadowJar {
     transform(com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer) {
         resource = 'reference.conf'
     }
+
     destinationDir = new File("./bin/")
 }
