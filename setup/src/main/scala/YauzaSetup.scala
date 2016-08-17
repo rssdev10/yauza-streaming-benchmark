@@ -11,8 +11,6 @@ import scala.sys.process._
 
 object YauzaSetup {
 
-  private val TIME_OF_TEST: Int = 120 * 1000 /* in ms */
-
   private val apacheMirror = getApacheMirror
 
   private val curDir = System.getProperty("user.dir")
@@ -20,6 +18,8 @@ object YauzaSetup {
   private val props = new Config("conf/benchmark.conf")
 
   private val inputTopic = Config.INPUT_TOPIC_NAME
+
+  private val TIME_OF_TEST: Int = props.getProperty(Config.PROP_TEST_DURATION, "120").toInt * 1000 /* in ms */
 
   //println("ls -l" !)
   object Product extends Enumeration {
