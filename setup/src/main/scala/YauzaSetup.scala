@@ -120,10 +120,10 @@ object YauzaSetup {
       s"""apache-storm-${VER(storm)}.tar.gz""",
       s"""$apacheMirror/storm/apache-storm-${VER(storm)}""") {
       override def start: Unit = {
-          startIfNeeded("daemon.name=nimbus", "Storm Nimbus", 3, s"$dirName/bin/storm", "nimbus");
-          startIfNeeded("daemon.name=supervisor", "Storm Supervisor", 3, s"$dirName/bin/storm", "supervisor");
-          startIfNeeded("daemon.name=ui", "Storm UI", 3, s"$dirName/bin/storm", "ui");
-          startIfNeeded("daemon.name=logviewer", "Storm LogViewer", 3, s"$dirName/bin/storm", "logviewer");
+          startIfNeeded("daemon.name=nimbus", "Storm Nimbus", 10, s"$dirName/bin/storm", "nimbus");
+          startIfNeeded("daemon.name=supervisor", "Storm Supervisor", 10, s"$dirName/bin/storm", "supervisor");
+          startIfNeeded("daemon.name=ui", "Storm UI", 10, s"$dirName/bin/storm", "ui");
+          startIfNeeded("daemon.name=logviewer", "Storm LogViewer", 10, s"$dirName/bin/storm", "logviewer");
       }
 
       override def stop: Unit = {
