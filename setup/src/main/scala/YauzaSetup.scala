@@ -251,6 +251,22 @@ object YauzaSetup {
       }
     },
 
+    benchmark_storm -> new Product(
+      "./bin",
+      s"""benchmark-storm-${VER(benchmark)}-all.jar""",
+      "") {
+      override def start: Unit = {
+        s"${products(storm).dirName}/bin/storm" +
+          s" jar $dirName/$fileName" +
+          " yauza.benchmark.storm.StormBenchmark" +
+          " StormBenchmark" run
+      }
+
+      override def stop: Unit = {
+        products(storm).stop
+      }
+    },
+
     delay -> new Product(delay, "", "") {
       override def start: Unit = {
         Thread sleep 30 * 1000
@@ -376,26 +392,24 @@ object YauzaSetup {
       // try to run Storm
       val seq = Array(
         zookeeper,
-        //hadoop,
         kafka,
-        storm//,
+        storm,
+        dstat,
+        delay,
 
-        //delay,
-
-        //benchmark_storm
-
-        //datagenerator_in_memory
-
+        benchmark_storm,
+        delay,
+        datagenerator_in_memory
       )
 
       start(seq)
 
-      //Thread sleep TIME_OF_TEST
-      //products(benchmark_spark).stop
+      Thread sleep TIME_OF_TEST
+      products(benchmark_storm).stop
 
-      //start(Seq(results_collector))
+      start(Seq(results_collector))
 
-      //stop(seq.filter(x => x != benchmark_spark))
+      stop(seq.filter(x => x != benchmark_storm))
     }),
 
     "start_kafka" -> (() => {
