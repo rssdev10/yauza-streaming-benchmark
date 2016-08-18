@@ -131,12 +131,12 @@ object YauzaSetup {
 //          startIfNeeded("daemon.name=ui", "Storm UI", 10, s"$dirName/bin/storm", "ui");
 //          startIfNeeded("daemon.name=logviewer", "Storm LogViewer", 10, s"$dirName/bin/storm", "logviewer");
 
-          s"scripts/storm_start_cluster.sh $dirName" !;
-          Thread sleep 10000
+          s"scripts/storm_start_cluster.sh $dirName" run;
+          Thread sleep 20000
       }
 
       override def stop: Unit = {
-          s"scripts/storm_stop_cluster.sh" !
+          s"scripts/storm_stop_cluster.sh" run
 
           stopIfNeeded("daemon.name=nimbus", "Storm Nimbus");
           stopIfNeeded("daemon.name=supervisor", "Storm Supervisor");

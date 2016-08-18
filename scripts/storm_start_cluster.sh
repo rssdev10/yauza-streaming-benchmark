@@ -20,6 +20,6 @@ sleep 10
 
 for node in `cat $CONF_DIR/slaves | grep -v "^\s*[#;]"`; do
   cmd="${STORM_PATH}/bin/storm supervisor"
-  ssh $node "echo "$node: starting Storm supervisor..."; nohup $cmd > /dev/null 2>&1 &";
+  ssh $node "echo "$node: starting Storm supervisor..."; nohup $cmd > /dev/null 2>&1 &" &
 done
 
