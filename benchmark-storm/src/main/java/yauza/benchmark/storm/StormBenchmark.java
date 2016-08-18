@@ -10,6 +10,7 @@ import org.apache.storm.kafka.trident.TridentKafkaConfig;
 import org.apache.storm.kafka.trident.TridentKafkaStateFactory;
 import org.apache.storm.kafka.trident.TridentKafkaUpdater;
 import org.apache.storm.kafka.trident.mapper.FieldNameBasedTupleToKafkaMapper;
+import org.apache.storm.kafka.trident.mapper.TridentTupleToKafkaMapper;
 import org.apache.storm.kafka.trident.selector.DefaultTopicSelector;
 import org.apache.storm.spout.SchemeAsMultiScheme;
 import org.apache.storm.trident.Stream;
@@ -53,7 +54,8 @@ public class StormBenchmark {
         spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
 
         // Consume new data from the topic
-        spoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
+        //spoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
+        spoutConfig.startOffsetTime = kafka.api.OffsetRequest.EarliestTime();
         TransactionalTridentKafkaSpout result = new TransactionalTridentKafkaSpout(spoutConfig);
         Fields a = result.getOutputFields();
         return result;
@@ -150,7 +152,18 @@ public class StormBenchmark {
                     .withKafkaTopicSelector(new DefaultTopicSelector(config.getProperty(
                             Config.OUTPUT_TOPIC_PROP_NAME_PREFIX + entry.getKey(),
                             Config.OUTPUT_TOPIC_NAME_PREFIX + entry.getKey())))
-                    .withTridentTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper(null, "result"));
+                    .withTridentTupleToKafkaMapper(new TridentTupleToKafkaMapper(){
+
+                        @Override
+                        public Object getKeyFromTuple(TridentTuple tuple) {
+                            return "";
+                        }
+
+                        @Override
+                        public Object getMessageFromTuple(TridentTuple tuple) {
+                            return tuple.getValueByField("result");
+                        }
+                    });
 
             stream
                     .each(new Fields("result"), new Debug())
