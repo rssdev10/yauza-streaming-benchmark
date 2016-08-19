@@ -18,7 +18,7 @@ ${STORM_PATH}/bin/storm logviewer &
 
 sleep 10
 
-for node in `cat $CONF_DIR/slaves | grep -v "^\s*[#;]"`; do
+for node in $(get_slaves); do
   cmd="${STORM_PATH}/bin/storm supervisor"
   ssh $node "echo "$node: starting Storm supervisor..."; nohup $cmd > /dev/null 2>&1 &" &
 done
