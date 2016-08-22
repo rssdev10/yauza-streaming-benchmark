@@ -170,8 +170,10 @@ public class StormBenchmark {
                     .partitionPersist(stateFactory, new Fields("result"), new TridentKafkaUpdater());
         }
 
+        org.apache.storm.Config stormConfig = getConsumerConfig();
+        stormConfig.setNumWorkers(partNum * outputStreams.size());
         LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("benchmark", getConsumerConfig(), tridentTopology.build());
+        cluster.submitTopology("benchmark", stormConfig, tridentTopology.build());
 
         Thread.sleep(Integer.parseInt(config.getProperty(Config.PROP_TEST_DURATION, "60")) * 1000);
 
