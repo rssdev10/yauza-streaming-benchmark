@@ -40,7 +40,7 @@ public class AvrCounter {
 
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
                 .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
-                .repartition(partNum)
+//                .repartition(partNum)
                 .mapPartitions(eventIterator -> {
                     AverageAggregate accumulator = new AverageAggregate();
                     eventIterator.forEachRemaining(new Consumer<Event>() {

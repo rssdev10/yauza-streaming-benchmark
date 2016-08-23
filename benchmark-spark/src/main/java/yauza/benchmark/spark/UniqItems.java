@@ -44,24 +44,48 @@ public class UniqItems {
 
         JavaDStream<UniqAggregator> uniques = eventStream
                 .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
-                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).hashCode() % partNum, x))
-                .groupByKey(partNum)
-                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<Integer, Iterable<Event>>>, UniqAggregator>() {
+                // repartitioning
+//                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).hashCode() % partNum, x))
+//                .groupByKey(partNum)
+//                .mapPartitions(new FlatMapFunction<Iterator<Tuple2<Integer, Iterable<Event>>>, UniqAggregator>() {
+//                    @Override
+//                    public Iterator<UniqAggregator> call(Iterator<Tuple2<Integer, Iterable<Event>>> tuple2Iterator) throws Exception {
+//                        UniqAggregator accumulator = new UniqAggregator();
+//                        Set<String> uniqIds = new HashSet<String>();
+//
+//                        tuple2Iterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
+//                            @Override
+//                            public void accept(Tuple2<Integer, Iterable<Event>> value) {
+//                                for (Event event: value._2()) {
+//                                    uniqIds.add(fieldAccessor.apply(event));
+//
+//                                    accumulator.registerEvent(event);
+//                                }
+//                            }
+//                        });
+//                        accumulator.value = uniqIds.size();
+//
+//                        List<UniqAggregator> list = Arrays.asList(accumulator);
+//                        return list.iterator();
+//                    }
+//                })
+                // remain Kafka's partitions
+                .mapPartitions(new FlatMapFunction<Iterator<Event>, UniqAggregator>() {
+
                     @Override
-                    public Iterator<UniqAggregator> call(Iterator<Tuple2<Integer, Iterable<Event>>> tuple2Iterator) throws Exception {
+                    public Iterator<UniqAggregator> call(Iterator<Event> events) throws Exception {
                         UniqAggregator accumulator = new UniqAggregator();
                         Set<String> uniqIds = new HashSet<String>();
 
-                        tuple2Iterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
+                        events.forEachRemaining(new Consumer<Event> () {
                             @Override
-                            public void accept(Tuple2<Integer, Iterable<Event>> value) {
-                                for (Event event: value._2()) {
-                                    uniqIds.add(fieldAccessor.apply(event));
+                            public void accept(Event event) {
+                                uniqIds.add(fieldAccessor.apply(event));
 
-                                    accumulator.registerEvent(event);
-                                }
+                                accumulator.registerEvent(event);
                             }
                         });
+
                         accumulator.value = uniqIds.size();
 
                         List<UniqAggregator> list = Arrays.asList(accumulator);

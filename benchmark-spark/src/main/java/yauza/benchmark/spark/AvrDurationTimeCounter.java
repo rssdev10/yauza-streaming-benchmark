@@ -71,27 +71,51 @@ public class AvrDurationTimeCounter {
                                                 FieldAccessorLong timestampAccessor) {
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
                 .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
-                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).hashCode() % partNum, x))
-                .groupByKey(partNum)
+                // repartitioning
+//                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).hashCode() % partNum, x))
+//                .groupByKey(partNum)
+//                .mapPartitions(eventIterator -> {
+//                    SessionAggregate accumulator = new SessionAggregate();
+//                    eventIterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
+//                        @Override
+//                        public void accept(Tuple2<Integer, Iterable<Event>> value) {
+//                            for (Event event: value._2()) {
+//                                String key = fieldAccessor.apply(event);
+//                                TimeAggregate time = accumulator.sessions.get(key);
+//                                if (time == null) {
+//                                    time = new TimeAggregate();
+//                                }
+//                                time.lastTime = event.getUnixtimestamp();
+//                                if (time.firstTime == 0) {
+//                                    time.firstTime = time.lastTime;
+//                                }
+//                                accumulator.sessions.put(key, time);
+//
+//                                accumulator.registerEvent(event);
+//                            }
+//                        }
+//                    });
+//                    List<SessionAggregate> list = Arrays.asList(accumulator);
+//                    return list.iterator();
+//                })
+                // remain Kafka's partitions
                 .mapPartitions(eventIterator -> {
                     SessionAggregate accumulator = new SessionAggregate();
-                    eventIterator.forEachRemaining(new Consumer<Tuple2<Integer, Iterable<Event>>>() {
+                    eventIterator.forEachRemaining(new Consumer<Event>() {
                         @Override
-                        public void accept(Tuple2<Integer, Iterable<Event>> value) {
-                            for (Event event: value._2()) {
-                                String key = fieldAccessor.apply(event);
-                                TimeAggregate time = accumulator.sessions.get(key);
-                                if (time == null) {
-                                    time = new TimeAggregate();
-                                }
-                                time.lastTime = event.getUnixtimestamp();
-                                if (time.firstTime == 0) {
-                                    time.firstTime = time.lastTime;
-                                }
-                                accumulator.sessions.put(key, time);
-
-                                accumulator.registerEvent(event);
+                        public void accept(Event event) {
+                            String key = fieldAccessor.apply(event);
+                            TimeAggregate time = accumulator.sessions.get(key);
+                            if (time == null) {
+                                time = new TimeAggregate();
                             }
+                            time.lastTime = event.getUnixtimestamp();
+                            if (time.firstTime == 0) {
+                                time.firstTime = time.lastTime;
+                            }
+                            accumulator.sessions.put(key, time);
+
+                            accumulator.registerEvent(event);
                         }
                     });
                     List<SessionAggregate> list = Arrays.asList(accumulator);
