@@ -43,7 +43,7 @@ public class UniqItems {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor) {
         KeyedStream<Event, Integer> userIdKeyed = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % FlinkApp.partNum);
+                .keyBy(event -> fieldAccessor.apply(event).hashCode() % FlinkApp.partNum);
 
         WindowedStream<Event, Integer, TimeWindow> uniqUsersWin =
                 userIdKeyed.timeWindow(Time.seconds(FlinkApp.windowDurationTime));

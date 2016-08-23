@@ -76,7 +76,7 @@ public class AvrDurationTimeCounter {
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor,
             FieldAccessorLong timestampAccessor) {
         KeyedStream<Event, Integer> keyedByIdHash = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).getBytes()[0] % partNum);
+                .keyBy(event -> fieldAccessor.apply(event).hashCode() % partNum);
 
         WindowedStream<Event, Integer, TimeWindow> timedWindowStream =
                 keyedByIdHash.timeWindow(Time.seconds(FlinkApp.windowDurationTime));

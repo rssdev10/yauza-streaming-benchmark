@@ -71,7 +71,7 @@ public class AvrDurationTimeCounter {
                                                 FieldAccessorLong timestampAccessor) {
         JavaDStream<AverageAggregate> avrByPartitions = eventStream
                 .window(Seconds.apply(SparkBenchmark.windowDurationTime), Seconds.apply(SparkBenchmark.windowDurationTime))
-                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).getBytes()[0] % partNum, x))
+                .mapToPair(x -> new Tuple2<Integer, Event>(fieldAccessor.apply(x).hashCode() % partNum, x))
                 .groupByKey(partNum)
                 .mapPartitions(eventIterator -> {
                     SessionAggregate accumulator = new SessionAggregate();
