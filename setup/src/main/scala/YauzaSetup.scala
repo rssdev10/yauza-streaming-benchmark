@@ -100,7 +100,7 @@ object YauzaSetup {
       s"""$apacheMirror/kafka/${VER(kafka)}""") {
       override def start: Unit = {
         val ZK_CONNECTIONS = props.getProperties.getProperty(Config.PROP_ZOOKEEPER)
-        val PARTITIONS = 1
+        val partitions: Int = props.getProperties.getProperty(Config.PROP_KAFKA_PARTITION, "3").toInt
 
         startIfNeeded("kafka.Kafka", kafka, 10,
           s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
@@ -109,7 +109,7 @@ object YauzaSetup {
           .split("\n").find(str => str.contains(inputTopic)).size
 
         if (count == 0) {
-          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $PARTITIONS --topic $inputTopic""" !!
+          s"""$dirName/bin/kafka-topics.sh --create --zookeeper $ZK_CONNECTIONS --replication-factor 1 --partitions $partitions --topic $inputTopic""" !!
         } else {
           println(s"Kafka topic $inputTopic already exists")
         }

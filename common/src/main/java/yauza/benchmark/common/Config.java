@@ -30,6 +30,8 @@ public class Config {
 
     public static final String DEFAULT_SPARK_MASTER = "spark://localhost:7077";
 
+    public static final String PROP_KAFKA_PARTITION = "kafka.partition";
+
     private Properties properties = null;
 
     public Config() {

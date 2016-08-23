@@ -3,6 +3,7 @@ package yauza.benchmark.datagenerator;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import yauza.benchmark.common.Config;
+import yauza.benchmark.common.Event;
 import yauza.benchmark.common.helpers.DummyEvent;
 
 import java.util.Properties;
@@ -23,7 +24,6 @@ public class DirectKafkaUploader implements Runnable {
     public void run() {
         KafkaProducer<String, String> producer = null;
         Properties props = config.getKafkaProperties();
-        producer = new KafkaProducer<>(props);
 
         Long messagesNumber = Long.parseLong(
                 config.getProperties().getProperty(
@@ -37,13 +37,24 @@ public class DirectKafkaUploader implements Runnable {
                 Integer.parseInt(config.getProperties().getProperty(
                         Config.PROP_DATA_DIRECTUPLOADER_THREADS, Long.toString(2)));
 
+        final int partitions =
+                Integer.parseInt(config.getProperties().getProperty(Config.PROP_KAFKA_PARTITION, "3"));
+
+        if (partitions > 1) {
+            props.put("partitioner.class", "yauza.benchmark.datagenerator.KafkaPartitioner");
+        }
+
+        producer = new KafkaProducer<>(props);
+
         limitPerSecond = limitPerSecond / parallelThreads;
 
         long time = System.currentTimeMillis();
         for (long counter = 0, messages = 0; counter < messagesNumber; counter++) {
             messages++;
-            String value = DummyEvent.generateJSON();
-            producer.send(new ProducerRecord<>(topic, value));
+            Event event = DummyEvent.generate();
+            String key = event.getUserId();
+            String  value = DummyEvent.eventToString(event);
+            producer.send(new ProducerRecord<>(topic, key, value));
 
             // ignore limit if limitPerSecond is zero
             if (limitPerSecond > 0 && messages >= limitPerSecond) {

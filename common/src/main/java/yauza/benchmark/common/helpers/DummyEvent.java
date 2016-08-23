@@ -60,7 +60,7 @@ public class DummyEvent {
     }
 
     static public String eventToString(Event event) {
-        return gson.toJson(DummyEvent.generate());
+        return gson.toJson(event);
     }
 
     static public Event generate() {
