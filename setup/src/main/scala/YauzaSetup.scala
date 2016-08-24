@@ -124,6 +124,10 @@ object YauzaSetup {
 
         "rm -rf /tmp/yauza/kafka/" !
       }
+
+      override def config(phase: String): Unit = {
+        Process(Seq("bash","-c",s"""cp -rf conf/kafka/* $dirName/""")).!;
+      }
     },
 
     storm -> new Product(
