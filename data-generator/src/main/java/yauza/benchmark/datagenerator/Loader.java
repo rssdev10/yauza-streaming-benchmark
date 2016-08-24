@@ -85,6 +85,13 @@ public class Loader {
                 });
             }
 
+            final int partitions =
+                    Integer.parseInt(config.getProperties().getProperty(Config.PROP_KAFKA_PARTITION, "3"));
+
+            if (partitions > 1) {
+                kafkaProps.put("partitioner.class", KafkaPartitioner.class.getCanonicalName());
+            }
+
 //            dataStream.addSink(new FlinkKafkaProducer09<>(config.getProperty("topic", Config.INPUT_TOPIC_NAME),
 //                    new SimpleStringSchema(),
 //                    kafkaProps));

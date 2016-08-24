@@ -41,7 +41,7 @@ public class DirectKafkaUploader implements Runnable {
                 Integer.parseInt(config.getProperties().getProperty(Config.PROP_KAFKA_PARTITION, "3"));
 
         if (partitions > 1) {
-            props.put("partitioner.class", "yauza.benchmark.datagenerator.KafkaPartitioner");
+            props.put("partitioner.class", KafkaPartitioner.class.getCanonicalName());
         }
 
         producer = new KafkaProducer<>(props);
