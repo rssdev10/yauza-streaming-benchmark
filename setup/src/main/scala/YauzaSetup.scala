@@ -102,8 +102,10 @@ object YauzaSetup {
         val ZK_CONNECTIONS = props.getProperties.getProperty(Config.PROP_ZOOKEEPER)
         val partitions: Int = props.getProperties.getProperty(Config.PROP_KAFKA_PARTITION, "3").toInt
 
-        startIfNeeded("kafka.Kafka", kafka, 10,
-          s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
+        //startIfNeeded("kafka.Kafka", kafka, 10,
+        //  s"$dirName/bin/kafka-server-start.sh", s"$dirName/config/server.properties")
+
+        s"$curDir/scripts/kafka_start_cluster.sh $dirName" !;
 
         val count = (s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $ZK_CONNECTIONS --topic $inputTopic 2>/dev/null""" !!)
           .split("\n").find(str => str.contains(inputTopic)).size
@@ -116,8 +118,11 @@ object YauzaSetup {
       }
 
       override def stop: Unit = {
-        stopIfNeeded( "kafka.Kafka", kafka)
-        "rm -rf /tmp/kafka-logs/" !
+        //stopIfNeeded( "kafka.Kafka", kafka)
+
+        s"$curDir/scripts/kafka_stop_cluster.sh" !;
+
+        "rm -rf /tmp/yauza/kafka/" !
       }
     },
 
@@ -381,6 +386,9 @@ object YauzaSetup {
         benchmark_spark,
         delay,
         datagenerator_in_memory
+//,
+//        delay,
+//        benchmark_spark
       )
 
       start(seq)
