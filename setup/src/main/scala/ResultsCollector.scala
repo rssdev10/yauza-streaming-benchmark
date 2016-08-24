@@ -127,14 +127,15 @@ object ResultsCollector {
         }
       }).start
 
-      val stream = consumerMap.get(topic).get(0)
-      val it = stream.iterator()
+      for (stream <- consumerMap.get(topic).iterator()) {
+        val it = stream.iterator()
 
-      while (it.hasNext()) {
-        val message = new String(it.next().message())
-        System.out.println(message)
-        val product = gson.fromJson(message, classOf[Product])
-        result += product
+        while (it.hasNext()) {
+          val message = new String(it.next().message())
+          System.out.println(message)
+          val product = gson.fromJson(message, classOf[Product])
+          result += product
+        }
       }
 
       return result
