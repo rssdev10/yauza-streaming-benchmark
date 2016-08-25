@@ -10,6 +10,6 @@ public class KafkaPartitioner implements Partitioner {
 
     @Override
     public int partition(Object key, int numPartitions) {
-        return key.hashCode() % numPartitions;
+        return Math.abs(key.hashCode()) % numPartitions;
     }
 }

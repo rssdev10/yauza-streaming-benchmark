@@ -168,6 +168,6 @@ public class Event implements Serializable {
     }
 
     public int partition(int totalPartitions) {
-        return this.userId.hashCode() % totalPartitions;
+        return Math.abs(this.userId.hashCode()) % totalPartitions;
     }
 }
