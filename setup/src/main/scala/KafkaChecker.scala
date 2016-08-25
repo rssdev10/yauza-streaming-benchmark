@@ -5,6 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import yauza.benchmark.common.{Config, Product}
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConversions.asScalaIterator
 
 object KafkaChecker {
 
@@ -43,30 +44,35 @@ object KafkaChecker {
         }
       }).start
 
-      val stream = consumerMap.get(topic).get(0)
-      val it = stream.iterator()
+      var partition = 0;
+      for (stream <- consumerMap.get(topic).iterator()) {
+        val it = stream.iterator()
 
-      var messageExample = ""
-      var counter:Long = 0
-      var beginTime = System.currentTimeMillis()
-      while (it.hasNext()) {
-        val message = new String(it.next().message())
-        if (counter == 0) messageExample = message
-        counter += 1
+        var messageExample = ""
+        var counter: Long = 0
+        var beginTime = System.currentTimeMillis()
+        while (it.hasNext()) {
+          val message = new String(it.next().message())
+          if (counter == 0) messageExample = message
+          counter += 1
+        }
+        val processingTime = System.currentTimeMillis() - beginTime
+
+        System.out.println(
+          s"""
+             |*******************************************************
+             |Kafka topic: $topic, partition: $partition
+             |Message example:
+             |$messageExample
+             |
+             |Processed $counter messages
+             |Processing time ${processingTime} ms
+             |Performance ${(counter * 1000)/processingTime} messages per sec
+             |*******************************************************
+             |""".stripMargin)
+
+        partition += 1
       }
-      val processingTime = System.currentTimeMillis() - beginTime
-      System.out.println(
-        s"""
-           |*******************************************************
-           |Kafka topic: $topic
-           |Message example:
-           |$messageExample
-           |
-           |Processed $counter messages
-           |Processing time ${processingTime} ms
-           |Performance ${(counter * 1000)/processingTime} messages per sec
-           |*******************************************************
-           |""".stripMargin)
     }
   }
 }
