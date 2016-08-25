@@ -9,7 +9,6 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.triggers.ProcessingTimeTrigger;
 import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
-
 import yauza.benchmark.common.Event;
 import yauza.benchmark.common.Product;
 import yauza.benchmark.common.Statistics;
@@ -39,7 +38,7 @@ public class AvrCounter {
      */
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorLong fieldAccessor) {
         KeyedStream<Event, Integer> streamOfNumerics = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).intValue() % FlinkApp.partNum);
+                .keyBy(event -> event.partition(FlinkApp.partNum));
 
         WindowedStream<Event, Integer, TimeWindow> windowedStream =
                 streamOfNumerics.timeWindow(Time.seconds(FlinkApp.windowDurationTime));

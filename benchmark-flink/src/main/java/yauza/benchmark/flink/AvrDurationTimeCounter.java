@@ -29,8 +29,6 @@ import yauza.benchmark.common.accessors.FieldAccessorString;
  *
  */
 public class AvrDurationTimeCounter {
-    private static final int partNum = 3;
-
     private static class TimeAggregate {
         public long firstTime;
         public long lastTime;
@@ -76,7 +74,7 @@ public class AvrDurationTimeCounter {
     public static DataStream<String> transform(DataStream<Event> eventStream, FieldAccessorString fieldAccessor,
             FieldAccessorLong timestampAccessor) {
         KeyedStream<Event, Integer> keyedByIdHash = eventStream
-                .keyBy(event -> fieldAccessor.apply(event).hashCode() % partNum);
+                .keyBy(event -> event.partition(FlinkApp.partNum));
 
         WindowedStream<Event, Integer, TimeWindow> timedWindowStream =
                 keyedByIdHash.timeWindow(Time.seconds(FlinkApp.windowDurationTime));

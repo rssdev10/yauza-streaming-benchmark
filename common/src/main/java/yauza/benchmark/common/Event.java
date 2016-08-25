@@ -166,4 +166,8 @@ public class Event implements Serializable {
     public void setInputTime(Long inputTime) {
         this.inputTime = inputTime;
     }
+
+    public int partition(int totalPartitions) {
+        return this.userId.hashCode() % totalPartitions;
+    }
 }
