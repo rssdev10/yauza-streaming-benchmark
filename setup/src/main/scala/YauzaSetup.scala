@@ -472,8 +472,12 @@ object YauzaSetup {
   }
 
   private def getApacheMirror: String = {
-    val str = Source.fromURL("https://www.apache.org/dyn/closer.cgi").mkString
-    """<strong>(.+)</strong>""".r.findFirstMatchIn(str).get.group(1)
+    try {
+      val str = Source.fromURL("https://www.apache.org/dyn/closer.cgi").mkString
+      """<strong>(.+)</strong>""".r.findFirstMatchIn(str).get.group(1)
+    } catch {
+      case e:Exception => "http://mirrors.ae-online.de/apache/"
+    }
   }
 
   def pidBySample(sample: String): String = try {
