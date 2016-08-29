@@ -48,7 +48,7 @@ public class UniqItems {
         WindowedStream<Event, Integer, TimeWindow> uniqUsersWin =
                 userIdKeyed.timeWindow(Time.seconds(FlinkApp.windowDurationTime));
 
-        DataStream<UniqAggregator> uniqUsers = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
+        DataStream<ProductAggregator> uniqUsers = uniqUsersWin.trigger(ProcessingTimeTrigger.create())
                 .fold(new UniqAggregator(), new FoldFunction<Event, UniqAggregator>() {
                     private static final long serialVersionUID = -6020094091742548382L;
 
@@ -60,21 +60,28 @@ public class UniqItems {
 
                         return accumulator;
                     }
+                })
+                .map(x -> {
+                    //System.out.print("*");
+                    ProductAggregator product = new ProductAggregator();
+                    product.value = x.uniqIds.size();
+                    product.summarize(x);
+                    return product;
                 });
 
-        AllWindowedStream<UniqAggregator, TimeWindow> combinedUniqNumStream =
+        AllWindowedStream<ProductAggregator, TimeWindow> combinedUniqNumStream =
                 uniqUsers
                 .timeWindowAll(Time.seconds(FlinkApp.emergencyTriggerTimeout))
                 .trigger(PurgingTrigger.of(CountOrTimeTrigger.of(FlinkApp.partNum)));
 
         return combinedUniqNumStream.fold(new ProductAggregator(),
-                new FoldFunction<UniqAggregator, ProductAggregator>() {
+                new FoldFunction<ProductAggregator, ProductAggregator>() {
             private static final long serialVersionUID = 7167358208807786523L;
 
             @Override
-            public ProductAggregator fold(ProductAggregator accumulator, UniqAggregator value) throws Exception {
+            public ProductAggregator fold(ProductAggregator accumulator, ProductAggregator value) throws Exception {
                 //System.out.println(value.toString());
-                accumulator.value += value.uniqIds.size();
+                accumulator.value += value.value;
 
                 accumulator.summarize(value);
 
