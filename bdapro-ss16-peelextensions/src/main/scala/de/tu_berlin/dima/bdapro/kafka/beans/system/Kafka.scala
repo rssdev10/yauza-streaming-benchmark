@@ -59,7 +59,30 @@ class Kafka(
 
   override protected def start(): Unit = ???   // TODO: implement
 
-  override protected def stop(): Unit = ???    // TODO: implement
+  override protected def stop(): Unit = {
+    val hosts = config.getStringList(s"system.$configKey.config.hosts").asScala
+    for (host <- hosts) {
+      s"""
+         |ssh $host << SSHEND
+         |  PID==`ps -aef | grep "[k]afka.Kafka" | awk '{print  $2}' |  head -1`
+         |
+         |  if [[ "$$PID" -ne "" ]]; then
+         |    kill "$$PID"
+         |    sleep 3
+         |  fi
+         |
+         |  PID==`ps -aef | grep "[k]afka.Kafka" | awk '{print  $2}' |  head -1`
+         |
+         |  if [[ "$$PID" -ne "" ]]; then
+         |    kill -9 "$$PID"
+         |  fi
+         |
+         |  exit
+         |SSHEND
+       """.stripMargin
+    }
+
+  }
 
   override def isRunning: Boolean = ???        // TODO: implement
 }
