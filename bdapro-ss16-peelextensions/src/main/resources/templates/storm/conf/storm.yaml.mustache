@@ -23,8 +23,15 @@
 # 
 #
 
-{{#storm.zookeeper.servers}}storm.zookeeper.servers:{{storm.zookeeper.servers}}{{/storm.zookeeper.servers}}
-{{#nimbus.seeds}}nimbus.seeds:{{nimbus.seeds}}{{/nimbus.seeds}}
+storm.zookeeper.servers:
+{{#storm.zookeeper.servers}}
+    - "{{.}}"
+{{/storm.zookeeper.servers}}
+
+nimbus.seeds:
+{{#nimbus.seeds}}
+    - "{{.}}"
+{{/nimbus.seeds}}
 
 # ##### These may optionally be filled in:
 #    
