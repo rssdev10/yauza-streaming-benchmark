@@ -1,10 +1,8 @@
 package de.tu_berlin.dima.bdapro.kafka.beans.system
 
-import java.util.regex.Pattern
-
 import com.samskivert.mustache.Mustache
 import org.peelframework.core.beans.system.Lifespan.Lifespan
-import org.peelframework.core.beans.system.{DistributedLogCollection, System}
+import org.peelframework.core.beans.system.System
 import org.peelframework.core.config.{Model, SystemConfig}
 import org.peelframework.core.util.shell
 
@@ -13,133 +11,136 @@ import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.matching.Regex
 
 /** Wrapper class for Kafka.
-  *
-  * Implements Kafka as a Peel `System` and provides setup and teardown methods.
-  *
-  * @param version Version of the system (e.g. "7.1")
-  * @param configKey The system configuration resides under `system.\${configKey}`
-  * @param lifespan `Lifespan` of the system
-  * @param dependencies Set of dependencies that this system needs
-  * @param mc The moustache compiler to compile the templates that are used to generate property files for the system
-  */
+ *
+ * Implements Kafka as a Peel `System` and provides setup and teardown methods.
+ *
+ * @param version      Version of the system (e.g. "7.1")
+ * @param configKey    The system configuration resides under `system.\${configKey}`
+ * @param lifespan     `Lifespan` of the system
+ * @param dependencies Set of dependencies that this system needs
+ * @param mc           The moustache compiler to compile the templates that are used to generate property files for the system
+ */
 class Kafka(
-             version      : String,
-             configKey    : String,
-             lifespan     : Lifespan,
-             dependencies : Set[System] = Set(),
-             mc           : Mustache.Compiler) extends System("kafka", version, configKey, lifespan, dependencies, mc)
-  with DistributedLogCollection {
+  version: String,
+  configKey: String,
+  lifespan: Lifespan,
+  dependencies: Set[System] = Set(),
+  mc: Mustache.Compiler
+) extends System("kafka", version, configKey, lifespan, dependencies, mc) {
 
-  // ---------------------------------------------------
-  // LogCollection.
-  // ---------------------------------------------------
+  def hosts: Seq[String] = config.getStringList(s"system.$configKey.config.hosts").asScala
 
-  override def hosts: Seq[String] = config.getStringList(s"system.$configKey.config.hosts").asScala
-
-  override protected def logFilePatterns(): Seq[Regex] = {
-    hosts.map(Pattern.quote).flatMap(node => Set(
-      s"server.log\\.*".r,
-      s"state-change.log\\.*".r,
-      s"controller.log\\.*".r))
-  }
   // ---------------------------------------------------
   // System.
   // ---------------------------------------------------
 
-  override def configuration() = SystemConfig(config, {
+  override def configuration() = new SystemConfig(config, {
     val conf = config.getString(s"system.$configKey.path.config")
     List(
-      SystemConfig.Entry[Model.Yaml](             // render using the 'Model.Yaml' controller
-        s"system.$configKey.server.properties",   // use this config namespace as a 'model'
-        s"$conf/server.properties",               // instantiate the config file
-        templatePath("config/server.properties"), // use this template to render the file
-        mc
-      )
-    ) // return a list of configuration files to render on setup
-  })
+      SystemConfig.Entry[Model.Yaml](s"system.$configKey.config.server", s"$conf/server.properties", templatePath("config/server.properties"), mc)
+    )
+  }) with ReplicateServerConfigs
 
   override protected def start(): Unit = {
-    val kafkaPath = config.getString(s"system.$configKey.path.home")
-    val kafkaTmp = config.getString(s"system.$configKey.path.kafka.tmp")
-    val logDir = config.getString(s"system.$configKey.path.log")
-    val timeout: Int = config.getString(s"system.$configKey.startup.timeout").toInt
+    val user = config.getString(s"system.$configKey.user")
+    val home = config.getString(s"system.$configKey.path.home")
+    val log = config.getString(s"system.$configKey.path.log")
+    val binlogDirs = config.getString(s"system.$configKey.config.server.log.dirs").split(',')
+    val startUpTimeout = config.getString(s"system.$configKey.startup.timeout").toInt
 
-    logger.info("Starting kafka processes on all hosts")
-    val futureProcessDescriptors: Future[Seq[(String, Int)]] = Future.traverse(hosts)(host => Future {
-      val cmd: String = Seq(
-        s"rm -rf ${kafkaTmp};",                  // TODO: make cleaing of Kafka dir more safe for incorrent dir
-        s"export LOG_DIR=${logDir};",
-        s"${kafkaPath}/bin/kafka-server-start.sh",
-        s"${kafkaPath}/config/server.properties" // TODO: specify properties file unique for each node
-      ).mkString(" ")
-
-      shell ! s""" ssh $host 'nohup $cmd >/dev/null 2>/dev/null & echo $$!' """
-
-      Thread.sleep(timeout * 1000)
-
-      val pid = sshFindKafkaPid(host)
-
-      (host, pid)
-    })
-    Await.result(futureProcessDescriptors, Math.max(30, 5 * hosts.size).seconds).foreach { case (host, pid) =>
-      if (pid > 0)
-        logger.info(s"Kafka started on host '$host' with PID $pid")
-      else
-        logger.error(s"Kafka didn't start on host '$host'")
+    val initServerDirsCmd = (host: String) => {
+      val initDirs = log +: binlogDirs // directories to be initialized on each host
+      val cmd = initDirs.map(path => s"rm -Rf $path && mkdir -p $path").mkString(" && ")
+      s""" ssh $user@$host "$cmd" """
     }
 
-    createTopic("test-topic", 2) // TODO: remove after testing
+    val startServerCmd = (host: String) =>
+      s"""
+         |ssh -t $host << SSHEND
+         |  export export LOG_DIR=$log
+         |  $home/bin/kafka-server-start.sh -daemon $home/config/server-$host.properties >/dev/null 2>/dev/null &
+         |SSHEND
+         """.stripMargin.trim
+
+    val checkServerHealthCmd = (host: String) =>
+      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
+
+    logger.info("Starting kafka processes on all hosts")
+    val futures = Future.traverse(hosts)(host => for {
+      initServerDirs <- Future {
+        logger.info(s"Initializing Kafka directories at $host")
+        shell ! (initServerDirsCmd(host), s"Unable to initialize Kafka directories at $host.")
+      }
+      startServer <- Future {
+        logger.info(s"Starting Kafka server at $host")
+        shell ! (startServerCmd(host), s"Unable to start Kafka server on host '$host'.")
+      }
+      checkServerHealth <- Future {
+        Thread.sleep(startUpTimeout * 1000)
+        logger.info(s"Checking health of Kafka server at $host")
+        shell !! checkServerHealthCmd(host)
+      }
+    } yield checkServerHealth)
+
+    val pids = Await.result(futures, Math.max(30, 5 * hosts.size).seconds)
+
+    // mark the system as `up` if all results are non-empty PIDs
+    isUp = pids.forall(_.trim.nonEmpty)
   }
 
   override protected def stop(): Unit = {
-    val user = config.getString(s"system.$configKey.user")
+    val home = config.getString(s"system.$configKey.path.home")
+
+    val stopServerCmd = (host: String) =>
+      s"""
+         |ssh $host $home/bin/kafka-server-stop.sh
+         """.stripMargin.trim
+
+    val checkServerHealthCmd = (host: String) =>
+      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
 
     logger.info("Stopping Kafka processes on all hosts")
-    val futureKillProcess = Future.traverse(hosts)(host => Future {
-      var pid = sshFindKafkaPid(host)
-      if (pid > 0) {
-        shell ! s"ssh $host kill $pid"
-
-        Thread sleep(5000)
-
-        pid = sshFindKafkaPid(host)
-        if (pid > 0) {
-          shell ! s"ssh $host kill -9 $pid"
-        }
+    val futures = Future.traverse(hosts)(host => for {
+      stopServer <- Future {
+        logger.info(s"Stopping Kafka server at $host")
+        shell ! (stopServerCmd(host), s"Unable to stop Kafka server on host '$host'.")
       }
-      logger.info(s"Kafka stopped on host '${host}'")
-    })
-    Await.result(futureKillProcess, Math.max(30, 5 * hosts.size).seconds)
+      checkServerHealth <- Future {
+        shell !! checkServerHealthCmd(host)
+      }
+    } yield checkServerHealth)
+
+    val pids = Await.result(futures, Math.max(30, 5 * hosts.size).seconds)
+
+    // mark the system as `down` if all PID results are empty
+    isUp = pids.forall(_.trim.isEmpty)
   }
 
   override def isRunning: Boolean = {
-    val futureProcessDescriptors: Future[Seq[Int]] = Future.traverse(hosts)(host => Future {
-      sshFindKafkaPid(host)
-    })
-    Await.result(futureProcessDescriptors, Math.max(30, 5 * hosts.size).seconds).exists(_ > 0)
+    val checkServerHealthCmd = (host: String) =>
+      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
+
+    val futures = Future.traverse(hosts)(host => for {
+      checkServerHealth <- Future {
+        shell !! checkServerHealthCmd(host)
+      }
+    } yield checkServerHealth)
+
+    val pids = Await.result(futures, Math.max(30, 5 * hosts.size).seconds)
+
+    // report the system as `running` if all PID results are non-empty
+    pids.forall(_.trim.nonEmpty)
   }
 
-    // ---------------------------------------------------
+  // ---------------------------------------------------
   // Helper methods.
   // ---------------------------------------------------
 
-  def sshFindPidByTemplate(host:String, template: String):Int = {
-    val pid = shell.!!(s"""ssh $host "ps -aef | grep "$template" | grep -vE 'grep' | awk '{print \\$$2}' | head -1"""").trim
-    try {
-      pid.toInt
-    } catch {
-      case e: NumberFormatException => 0
-    }
-  }
-
-  private def sshFindKafkaPid(host:String):Int = sshFindPidByTemplate(host, "[k]afka.Kafka")
-
-  def createTopic(inputTopic:String, partitions:Int = 1):Unit = {
+  def createTopic(inputTopic: String, partitions: Int = 1): Unit = {
     val dirName = config.getString(s"system.$configKey.path.home")
-    val zk_connections = config.getString(s"system.$configKey.server.properties.zookeeper.connect")
+    val zk_connections = config.getString(s"system.$configKey.config.server.zookeeper.connect")
 
     val count = (shell !! s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $zk_connections --topic $inputTopic 2>/dev/null""")
       .split("\n").find(str => str.contains(inputTopic)).size
@@ -150,4 +151,22 @@ class Kafka(
       logger.info(s"Kafka topic $inputTopic already exists")
     }
   }
+
+  /** Helper trait that modifies the default behavior of the `SystemConfig` instance. */
+  trait ReplicateServerConfigs {
+    self: SystemConfig =>
+
+    /** Extends the default `SystemConfig` by replicating the `server.properties` for each configured host. */
+    override def update(): Boolean = {
+      val hasChanged = (for (e <- entries) yield e.update(config)).exists(identity)
+
+      val conf = config.getString(s"system.$configKey.path.config")
+      for ((host, id) <- hosts.zipWithIndex) {
+        shell ! s""" sed "s/BROKER_ID/${id + 1}/" $conf/server.properties > $conf/server-$host.properties """
+      }
+
+      hasChanged
+    }
+  }
+
 }
