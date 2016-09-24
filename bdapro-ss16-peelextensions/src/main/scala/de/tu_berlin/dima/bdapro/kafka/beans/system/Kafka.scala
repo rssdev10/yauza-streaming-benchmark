@@ -127,7 +127,7 @@ class Kafka(
   // ---------------------------------------------------
 
   def sshFindPidByTemplate(host:String, template: String):Int = {
-    val pid = shell.!!(s"""ssh $host "ps -aef | grep "$template" | awk '{print \\$$2}' | head -1"""").trim
+    val pid = shell.!!(s"""ssh $host "ps -aef | grep "$template" | grep -vE 'grep' | awk '{print \\$$2}' | head -1"""").trim
     try {
       pid.toInt
     } catch {
