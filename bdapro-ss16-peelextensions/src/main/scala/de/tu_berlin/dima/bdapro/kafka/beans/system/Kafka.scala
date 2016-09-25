@@ -58,9 +58,10 @@ class Kafka(
 
     val startServerCmd = (host: String) =>
       s"""
-         |ssh -t $host << SSHEND
+         |ssh -tt $host << SSHEND
          |  export export LOG_DIR=$log
          |  $home/bin/kafka-server-start.sh -daemon $home/config/server-$host.properties >/dev/null 2>/dev/null &
+         |  exit
          |SSHEND
          """.stripMargin.trim
 
