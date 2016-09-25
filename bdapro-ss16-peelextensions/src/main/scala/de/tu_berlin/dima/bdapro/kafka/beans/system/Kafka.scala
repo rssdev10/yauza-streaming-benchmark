@@ -58,7 +58,7 @@ class Kafka(
 
     val startServerCmd = (host: String) =>
       s"""
-         |ssh -tt $host << SSHEND
+         |ssh -tt $user@$host << SSHEND
          |  export export LOG_DIR=$log
          |  $home/bin/kafka-server-start.sh -daemon $home/config/server-$host.properties >/dev/null 2>/dev/null &
          |  exit
@@ -66,7 +66,7 @@ class Kafka(
          """.stripMargin.trim
 
     val checkServerHealthCmd = (host: String) =>
-      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
+      s""" ssh $user@$host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
 
     logger.info("Starting kafka processes on all hosts")
     val futures = Future.traverse(hosts)(host => for {
@@ -92,15 +92,16 @@ class Kafka(
   }
 
   override protected def stop(): Unit = {
+    val user = config.getString(s"system.$configKey.user")
     val home = config.getString(s"system.$configKey.path.home")
 
     val stopServerCmd = (host: String) =>
       s"""
-         |ssh $host $home/bin/kafka-server-stop.sh
+         |ssh $user@$host $home/bin/kafka-server-stop.sh
          """.stripMargin.trim
 
     val checkServerHealthCmd = (host: String) =>
-      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
+      s""" ssh $user@$host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
 
     logger.info("Stopping Kafka processes on all hosts")
     val futures = Future.traverse(hosts)(host => for {
@@ -120,8 +121,9 @@ class Kafka(
   }
 
   override def isRunning: Boolean = {
+    val user = config.getString(s"system.$configKey.user")
     val checkServerHealthCmd = (host: String) =>
-      s""" ssh $host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
+      s""" ssh $user@$host "ps ax | grep -i 'kafka\\.Kafka' | grep java | grep -v grep | awk '{print $$1}'" """
 
     val futures = Future.traverse(hosts)(host => for {
       checkServerHealth <- Future {
