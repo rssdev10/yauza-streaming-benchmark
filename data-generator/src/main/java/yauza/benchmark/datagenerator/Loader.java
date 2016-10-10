@@ -1,16 +1,24 @@
 package yauza.benchmark.datagenerator;
 
+import com.google.gson.Gson;
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.api.java.typeutils.TypeInfoParser;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 //import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer09;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer08;
-import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
+import org.apache.flink.streaming.util.serialization.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import yauza.benchmark.common.Config;
+import yauza.benchmark.common.Event;
 
+import java.io.Serializable;
 import java.util.Properties;
 
 /**
@@ -20,6 +28,7 @@ import java.util.Properties;
 public class Loader {
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static final long INTERVAL_MS = 1000;
+    private static Gson gson = new Gson();
 
     public static void main(final String[] args) throws Exception {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
@@ -90,16 +99,32 @@ public class Loader {
 
             if (partitions > 1) {
                 kafkaProps.put("partitioner.class", KafkaPartitioner.class.getCanonicalName());
-            }
+                TypeInformation<Tuple2<String, String>> stringStringInfo =
+                        TypeInfoParser.parse("org.apache.flink.api.java.tuple.Tuple2<String, String>");
 
+                KeyedSerializationSchema<Tuple2<String, String>> schema =
+                        new TypeInformationKeyValueSerializationSchema<>(String.class, String.class, env.getConfig());
+
+                dataStream
+                        .map(json -> {
+                            Event event = gson.fromJson(json, Event.class);
+                            return new Tuple2<String, String>(event.getUserId(), json);
+                        }).returns(stringStringInfo)
+                        .setParallelism(partitions)
+                        .addSink(new FlinkKafkaProducer08<>(config.getProperty("topic", Config.INPUT_TOPIC_NAME),
+                                schema,
+                                //new KeyedSerializer(),
+                                kafkaProps));
+            } else {
 //            dataStream.addSink(new FlinkKafkaProducer09<>(config.getProperty("topic", Config.INPUT_TOPIC_NAME),
 //                    new SimpleStringSchema(),
 //                    kafkaProps));
 
-            dataStream.addSink(new FlinkKafkaProducer08<>(config.getProperty("topic", Config.INPUT_TOPIC_NAME),
-                    new SimpleStringSchema(),
-                    kafkaProps));
-            //dataStream.print();
+                dataStream.addSink(new FlinkKafkaProducer08<>(config.getProperty("topic", Config.INPUT_TOPIC_NAME),
+                        new SimpleStringSchema(),
+                        kafkaProps));
+                //dataStream.print();
+            }
 
             env.execute();
         } else if (mode.equals("inmemory")) {
@@ -122,6 +147,21 @@ public class Loader {
             printHelpMessage();
         }
         System.exit(1);
+    }
+
+    public static final class KeyedSerializer implements KeyedSerializationSchema<Tuple2<String, String>> {
+        org.apache.kafka.common.serialization.StringSerializer serializer =
+                new org.apache.kafka.common.serialization.StringSerializer();
+
+        @Override
+        public byte[] serializeKey(Tuple2<String, String> element) {
+            return serializer.serialize("", element.f0);
+        }
+
+        @Override
+        public byte[] serializeValue(Tuple2<String, String> element) {
+            return serializer.serialize("", element.f1);
+        }
     }
 
     private static void printHelpMessage() {
