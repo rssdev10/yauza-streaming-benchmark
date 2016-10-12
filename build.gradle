@@ -46,15 +46,15 @@ project(':benchmark-flink') {
 }
 */
 
-project(':common-library') {
-    apply plugin: 'maven'
+apply plugin: 'maven'
 
-    task createPom << {
+allprojects {
+    task createPom << { task ->
         pom {
             project {
-                groupId 'yauza.benchmark'
-                artifactId 'common'
-                version '1.0.0'
+                groupId app.group
+                artifactId task.project.name
+                version app.version
 
                 inceptionYear '2016'
                 licenses {
