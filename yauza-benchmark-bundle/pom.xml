@@ -48,6 +48,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>yauza-benchmark-spark-jobs</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>yauza-benchmark-storm-jobs</artifactId>
+        </dependency>
 
         <!-- Peel -->
         <dependency>
