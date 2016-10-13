@@ -1,4 +1,4 @@
-package de.tu_berlin.dima.bdapro.storm.beans.system
+package yauza.benchmark.storm.beans.system
 
 import com.samskivert.mustache.Mustache
 import org.peelframework.core.beans.system.Lifespan.Lifespan

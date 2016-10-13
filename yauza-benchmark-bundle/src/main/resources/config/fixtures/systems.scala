@@ -1,7 +1,7 @@
 package config.fixtures
 
-import de.tu_berlin.dima.bdapro.kafka.beans.system.Kafka
-import de.tu_berlin.dima.bdapro.storm.beans.system.Storm
+import yauza.benchmark.kafka.beans.system.Kafka
+import yauza.benchmark.storm.beans.system.Storm
 
 import com.samskivert.mustache.Mustache
 import org.peelframework.core.beans.system.{Lifespan, System}
@@ -12,7 +12,7 @@ import org.peelframework.zookeeper.beans.system.Zookeeper
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
-/** System beans for the 'bdapro-ss16' bundle. */
+/** System beans for the 'yauza.benchmark' bundle. */
 @Configuration
 class systems extends ApplicationContextAware {
 
