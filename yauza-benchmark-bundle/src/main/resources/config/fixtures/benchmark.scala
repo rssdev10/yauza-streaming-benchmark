@@ -13,9 +13,9 @@ import org.peelframework.spark.beans.system.Spark
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
-/** `WordCount` experiment fixtures for the 'yauza-benchmark' bundle. */
+/** `Yauza-benchmark` experiment fixtures for the 'yauza-benchmark' bundle. */
 @Configuration
-class wordcount extends ApplicationContextAware {
+class benchmark extends ApplicationContextAware {
 
   /* The enclosing application context. */
   var ctx: ApplicationContext = null
@@ -28,53 +28,20 @@ class wordcount extends ApplicationContextAware {
   // Data Generators
   // ---------------------------------------------------
 
-  @Bean(name = Array("datagen.words"))
-  def `datagen.words`: FlinkJob = new FlinkJob(
-    runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
-    command =
-      """
-        |-v -c yauza.benchmark.datagen.flink.WordGenerator        \
-        |${app.path.datagens}/yauza-benchmark-datagens-1.0-SNAPSHOT.jar        \
-        |${system.default.config.parallelism.total}                           \
-        |${datagen.tuples.per.task}                                           \
-        |${datagen.dictionary.dize}                                           \
-        |${datagen.data-distribution}                                         \
-        |${system.hadoop-2.path.input}/rubbish.txt
-      """.stripMargin.trim
-  )
 
   // ---------------------------------------------------
   // Data Sets
   // ---------------------------------------------------
 
-  @Bean(name = Array("dataset.words.static"))
-  def `dataset.words.static`: DataSet = new CopiedDataSet(
-    src = "${app.path.datasets}/rubbish.txt",
-    dst = "${system.hadoop-2.path.input}/rubbish.txt",
-    fs  = ctx.getBean("hdfs-2.7.1", classOf[HDFS2])
-  )
-
-  @Bean(name = Array("dataset.words.generated"))
-  def `dataset.words.generated`: DataSet = new GeneratedDataSet(
-    src = ctx.getBean("datagen.words", classOf[FlinkJob]),
-    dst = "${system.hadoop-2.path.input}/rubbish.txt",
-    fs  = ctx.getBean("hdfs-2.7.1", classOf[HDFS2])
-  )
-
-  @Bean(name = Array("wordcount.output"))
-  def `wordcount.output`: ExperimentOutput = new ExperimentOutput(
-    path = "${system.hadoop-2.path.output}/wordcount",
-    fs  = ctx.getBean("hdfs-2.7.1", classOf[HDFS2])
-  )
 
   // ---------------------------------------------------
   // Experiments
   // ---------------------------------------------------
 
-  @Bean(name = Array("wordcount.default"))
-  def `wordcount.default`: ExperimentSuite = {
-    val `wordcount.flink.default` = new FlinkExperiment(
-      name    = "wordcount.flink.default",
+  @Bean(name = Array("benchmark.default"))
+  def `benchmark.default`: ExperimentSuite = {
+    val `benchmark.flink.default` = new FlinkExperiment(
+      name    = "benchmark.flink.default",
       command =
         """
           |-v -c yauza.benchmark.flink.FlinkWC                      \
@@ -89,8 +56,8 @@ class wordcount extends ApplicationContextAware {
       outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
     )
 
-    val `wordcount.spark.default` = new SparkExperiment(
-      name    = "wordcount.spark.default",
+    val `benchmark.spark.default` = new SparkExperiment(
+      name    = "benchmark.spark.default",
       command =
         """
           |--class yauza.benchmark.spark.SparkWC                    \
@@ -100,20 +67,20 @@ class wordcount extends ApplicationContextAware {
         """.stripMargin.trim,
       config  = ConfigFactory.parseString(""),
       runs    = 3,
-      runner  = ctx.getBean("spark-1.6.0", classOf[Spark]),
+      runner  = ctx.getBean("spark-2.0.0", classOf[Spark]),
       inputs  = Set(ctx.getBean("dataset.words.static", classOf[DataSet])),
       outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
     )
 
     new ExperimentSuite(Seq(
-      `wordcount.flink.default`,
-      `wordcount.spark.default`))
+      `benchmark.flink.default`,
+      `benchmark.spark.default`))
   }
 
-  @Bean(name = Array("wordcount.scale-out"))
-  def `wordcount.scale-out`: ExperimentSuite = {
-    val `wordcount.flink.prototype` = new FlinkExperiment(
-      name    = "wordcount.flink.__topXXX__",
+  @Bean(name = Array("benchmark.scale-out"))
+  def `benchmark.scale-out`: ExperimentSuite = {
+    val `benchmark.flink.prototype` = new FlinkExperiment(
+      name    = "benchmark.flink.__topXXX__",
       command =
         """
           |-v -c yauza.benchmark.flink.FlinkWC                      \
@@ -135,7 +102,7 @@ class wordcount extends ApplicationContextAware {
       outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
     )
 
-    val `wordcount.spark.prototype` = new SparkExperiment(
+    val `benchmark.spark.prototype` = new SparkExperiment(
       name    = "wordcount.spark.__topXXX__",
       command =
         """
@@ -164,7 +131,7 @@ class wordcount extends ApplicationContextAware {
           paramName = "topXXX",
           paramVals = Seq("top005", "top010", "top020")),
         prototypes = Seq(
-          `wordcount.flink.prototype`,
-          `wordcount.spark.prototype`)))
+          `benchmark.flink.prototype`,
+          `benchmark.spark.prototype`)))
   }
 }

@@ -20,7 +20,7 @@ import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 @Import(value = Array(
   classOf[org.peelframework.extensions], // custom system beans
   classOf[config.fixtures.systems],      // custom system beans
-  classOf[config.fixtures.wordcount]     // wordcount experiment beans
+  classOf[config.fixtures.benchmark]     // yauza benchmark experiment beans
 ))
 class experiments extends ApplicationContextAware {
 
