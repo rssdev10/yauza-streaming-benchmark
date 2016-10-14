@@ -3,10 +3,10 @@ package yauza.benchmark
 import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
 import java.util
-import java.util.{Calendar, Collections, Date, Properties}
+import java.util.{Calendar, Properties}
 
 import com.google.gson.Gson
-import kafka.consumer.KafkaStream
+import _root_.kafka.consumer.KafkaStream
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
 import yauza.benchmark.common.Product
@@ -115,7 +115,8 @@ object ResultsCollector {
 //      }
 
       // Kafka 8
-      val consumerStream = kafka.consumer.Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(props))
+      val consumerStream = _root_.kafka.consumer.Consumer.createJavaConsumerConnector(
+        new _root_.kafka.consumer.ConsumerConfig(props))
       val topicCountMap = new util.HashMap[String, Integer]()
       topicCountMap.put(topic, new Integer(1))
       val consumerMap = consumerStream.createMessageStreams(topicCountMap)
@@ -127,7 +128,7 @@ object ResultsCollector {
         }
       }).start
 
-      for (stream <- consumerMap.get(topic).iterator()) {
+      for (stream: KafkaStream[Array[Byte], Array[Byte]] <- consumerMap.get(topic).iterator()) {
         val it = stream.iterator()
 
         while (it.hasNext()) {

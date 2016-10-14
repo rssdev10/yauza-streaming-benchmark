@@ -11,6 +11,9 @@
     <artifactId>yauza-benchmark-peelextensions</artifactId>
 
     <properties>
+        <!-- Kafka -->
+        <kafka.version>0.8.2.2</kafka.version>
+
         <!-- Scala -->
         <scala.version>2.10.5</scala.version>
         <scala.tools.version>2.10</scala.tools.version>
@@ -32,6 +35,30 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
             <version>${scala.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>yauza.benchmark</groupId>
+            <artifactId>yauza-benchmark-common</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_${scala.tools.version}</artifactId>
+            <version>${kafka.version}</version>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-log4j12</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j</artifactId>
+                    <groupId>log4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Peel -->
