@@ -2,6 +2,7 @@ package config.fixtures
 
 import yauza.benchmark.kafka.beans.system.Kafka
 import yauza.benchmark.storm.beans.system.Storm
+import yauza.benchmark.data.beans.system.StreamGenerator
 
 import com.samskivert.mustache.Mustache
 import org.peelframework.core.beans.system.{Lifespan, System}
@@ -61,5 +62,15 @@ class systems extends ApplicationContextAware {
     lifespan     = Lifespan.EXPERIMENT,
     dependencies = Set(ctx.getBean("zookeeper-3.4.5", classOf[Zookeeper])),
     mc           = ctx.getBean(classOf[Mustache.Compiler])
+  )
+
+  @Bean(name = Array("stream-1.0.0"))
+  def `stream-1.0.0`: StreamGenerator = new StreamGenerator(
+    version      = "1.0.0",
+    configKey    = "benchmark",
+    lifespan     = Lifespan.EXPERIMENT,
+    dependencies = Set.empty,
+    mc           = ctx.getBean(classOf[Mustache.Compiler]),
+    "yauza-benchmark-datagens-1.0-SNAPSHOT.jar"
   )
 }

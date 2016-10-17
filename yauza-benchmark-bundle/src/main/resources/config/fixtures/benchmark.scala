@@ -14,6 +14,7 @@ import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
 /** `Yauza-benchmark` experiment fixtures for the 'yauza-benchmark' bundle. */
+
 @Configuration
 class benchmark extends ApplicationContextAware {
 
@@ -28,11 +29,9 @@ class benchmark extends ApplicationContextAware {
   // Data Generators
   // ---------------------------------------------------
 
-
   // ---------------------------------------------------
   // Data Sets
   // ---------------------------------------------------
-
 
   // ---------------------------------------------------
   // Experiments
@@ -52,8 +51,8 @@ class benchmark extends ApplicationContextAware {
       config  = ConfigFactory.parseString(""),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
-      inputs  = Set(ctx.getBean("dataset.words.static", classOf[DataSet])),
-      outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
+      inputs  = Set.empty,
+      outputs = Set.empty
     )
 
     val `benchmark.spark.default` = new SparkExperiment(
@@ -68,8 +67,8 @@ class benchmark extends ApplicationContextAware {
       config  = ConfigFactory.parseString(""),
       runs    = 3,
       runner  = ctx.getBean("spark-2.0.0", classOf[Spark]),
-      inputs  = Set(ctx.getBean("dataset.words.static", classOf[DataSet])),
-      outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
+      inputs  = Set.empty,
+      outputs = Set.empty
     )
 
     new ExperimentSuite(Seq(
@@ -98,12 +97,12 @@ class benchmark extends ApplicationContextAware {
         """.stripMargin.trim),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
-      inputs  = Set(ctx.getBean("dataset.words.generated", classOf[DataSet])),
-      outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
+      inputs  = Set.empty,
+      outputs = Set.empty
     )
 
     val `benchmark.spark.prototype` = new SparkExperiment(
-      name    = "wordcount.spark.__topXXX__",
+      name    = "benchmark.spark.__topXXX__",
       command =
         """
           |--class yauza.benchmark.spark.SparkWC                    \
@@ -120,9 +119,9 @@ class benchmark extends ApplicationContextAware {
           |datagen.data-distribution               = Uniform
         """.stripMargin.trim),
       runs    = 3,
-      runner  = ctx.getBean("spark-1.6.0", classOf[Spark]),
-      inputs  = Set(ctx.getBean("dataset.words.generated", classOf[DataSet])),
-      outputs = Set(ctx.getBean("wordcount.output", classOf[ExperimentOutput]))
+      runner  = ctx.getBean("spark-2.0.0", classOf[Spark]),
+      inputs  = Set.empty,
+      outputs = Set.empty
     )
 
     new ExperimentSuite(
