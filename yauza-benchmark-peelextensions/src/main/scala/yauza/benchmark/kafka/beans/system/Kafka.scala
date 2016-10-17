@@ -2,7 +2,7 @@ package yauza.benchmark.kafka.beans.system
 
 import com.samskivert.mustache.Mustache
 import org.peelframework.core.beans.system.Lifespan.Lifespan
-import org.peelframework.core.beans.system.System
+import org.peelframework.core.beans.system.{FileSystem, System}
 import org.peelframework.core.config.{Model, SystemConfig}
 import org.peelframework.core.util.shell
 
@@ -28,7 +28,7 @@ class Kafka(
   lifespan: Lifespan,
   dependencies: Set[System] = Set(),
   mc: Mustache.Compiler
-) extends System("kafka", version, configKey, lifespan, dependencies, mc) {
+) extends System("kafka", version, configKey, lifespan, dependencies, mc) with FileSystem  {
 
   def hosts: Seq[String] = config.getStringList(s"system.$configKey.config.hosts").asScala
 
@@ -137,6 +137,20 @@ class Kafka(
     pids.forall(_.trim.nonEmpty)
   }
 
+  override def exists(path: String): Boolean = {
+    val dirName = config.getString(s"system.$configKey.path.home")
+    val zk_connections = config.getString(s"system.$configKey.config.server.zookeeper.connect")
+
+    val count = (shell !! s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $zk_connections --topic $path 2>/dev/null""")
+      .split("\n").find(str => str.contains(path)).size
+
+    return count > 0
+  }
+
+  override def rmr(path: String, skipTrash: Boolean): Int = ???
+
+  override def copyFromLocal(src: String, dst: String): Int = ???
+
   // ---------------------------------------------------
   // Helper methods.
   // ---------------------------------------------------
@@ -145,10 +159,7 @@ class Kafka(
     val dirName = config.getString(s"system.$configKey.path.home")
     val zk_connections = config.getString(s"system.$configKey.config.server.zookeeper.connect")
 
-    val count = (shell !! s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $zk_connections --topic $inputTopic 2>/dev/null""")
-      .split("\n").find(str => str.contains(inputTopic)).size
-
-    if (count == 0) {
+    if (!exists(inputTopic)) {
       shell !! s"""$dirName/bin/kafka-topics.sh --create --zookeeper $zk_connections --replication-factor 1 --partitions $partitions --topic $inputTopic"""
     } else {
       logger.info(s"Kafka topic $inputTopic already exists")
@@ -171,5 +182,4 @@ class Kafka(
       hasChanged
     }
   }
-
 }
