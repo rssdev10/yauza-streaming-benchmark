@@ -100,10 +100,9 @@ class StreamGenerator(
     logger.info("Starting dstat processes on all hosts")
     val futureProcessDescriptors = Future.traverse(hosts)(host => Future {
       val cmd = Seq("java",
-        "-jar",
-        datagen,
-        "--config",
-        s"${conf}/benchmark.properties"
+        "-jar", datagen,
+        "--mode", "inmemory",
+        "--config", s"${conf}/benchmark.properties"
       ).mkString(" ")
 
       val pid = (shell !! s""" ssh $host 'nohup $cmd >/dev/null 2>/dev/null & echo $$!' """).trim
