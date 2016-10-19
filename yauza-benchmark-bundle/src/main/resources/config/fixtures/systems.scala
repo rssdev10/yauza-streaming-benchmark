@@ -34,8 +34,9 @@ class systems extends ApplicationContextAware {
     configKey    = "flink",
     lifespan     = Lifespan.EXPERIMENT,
     dependencies = Set(
-      ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
-      ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
+                        ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                        ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
+
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
 
@@ -44,7 +45,10 @@ class systems extends ApplicationContextAware {
     version      = "2.0.0",
     configKey    = "spark",
     lifespan     = Lifespan.EXPERIMENT,
-    dependencies = Set(ctx.getBean("hdfs-2.7.1", classOf[HDFS2])),
+    dependencies = Set(
+                        ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                        ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
+
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
 
@@ -62,7 +66,11 @@ class systems extends ApplicationContextAware {
     version      = "1.0.2",
     configKey    = "storm",
     lifespan     = Lifespan.EXPERIMENT,
-    dependencies = Set(ctx.getBean("zookeeper-3.4.5", classOf[Zookeeper])),
+    dependencies = Set(
+                      ctx.getBean("zookeeper-3.4.5", classOf[Zookeeper]),
+                      ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                      ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
+
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
 
@@ -70,8 +78,8 @@ class systems extends ApplicationContextAware {
   def `stream-1.0.0`: StreamGenerator = new StreamGenerator(
     version      = "1.0.0",
     configKey    = "benchmark",
-    lifespan     = Lifespan.EXPERIMENT,
-    dependencies = Set.empty,
+    lifespan     = Lifespan.RUN,
+    dependencies = Set(ctx.getBean("kafka-0.8.2.2", classOf[Kafka])),
     mc           = ctx.getBean(classOf[Mustache.Compiler]),
     "yauza-benchmark-datagens-1.0-SNAPSHOT.jar"
   )

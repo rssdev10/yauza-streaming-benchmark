@@ -11,6 +11,7 @@ import org.peelframework.core.beans.system.System
 import org.peelframework.core.config.{Model, SystemConfig}
 import org.peelframework.core.util.shell
 import resource._
+import yauza.benchmark.ResultsCollector
 
 import scala.collection.JavaConverters._
 import scala.collection.Seq
@@ -82,8 +83,10 @@ class StreamGenerator(
   override def isRunning: Boolean =
     processes.size == hosts.size
 
-  override def beforeRun(run: Run[System]): Unit =
+  override def beforeRun(run: Run[System]): Unit = {
+    kafkaTopicsInit
     startProcesses(run)
+  }
 
   override def afterRun(run: Run[System]): Unit =
     stopProcesses(Some(run))
@@ -97,7 +100,7 @@ class StreamGenerator(
     val datagen = config.getString("app.path.datagens") + "/" + datagenName
     val conf = config.getString(s"system.$configKey.path.config")
 
-    logger.info("Starting dstat processes on all hosts")
+    logger.info("Starting stream generator processes on all hosts")
     val futureProcessDescriptors = Future.traverse(hosts)(host => Future {
       val cmd = Seq("java",
         "-jar", datagen,
@@ -106,7 +109,7 @@ class StreamGenerator(
       ).mkString(" ")
 
       val pid = (shell !! s""" ssh $host 'nohup $cmd >/dev/null 2>/dev/null & echo $$!' """).trim
-      logger.info(s"Dstat started on host '$host' with PID $pid")
+      logger.info(s"stream generator started on host '$host' with PID $pid")
 
       ProcessDescriptor(host, pid.toInt)
     })
@@ -124,17 +127,23 @@ class StreamGenerator(
         desc <- ProcessDescriptor.unapply(line)
       } yield desc
 
-    logger.info("Stopping dstat processes on all hosts")
+    logger.info("Stopping stream generator processes on all hosts")
     val futureCopyContents = Future.traverse(processes)(desc => {
       for {
         killProcess <- Future {
           shell ! s"ssh ${desc.host} kill ${desc.pid}"
-          logger.info(s"Dstat with PID ${desc.pid} stopped on host '${desc.host}'")
+          logger.info(s"stream generator with PID ${desc.pid} stopped on host '${desc.host}'")
           desc
         }
       } yield killProcess
     })
     setProcesses(processes diff Await.result(futureCopyContents, Math.max(30, 5 * hosts.size).seconds))
+
+    // collect data from Kafka
+    ResultsCollector.main(Array[String](
+      config.getString(s"system.$configKey.path.config"),
+      config.getString("app.path.results")
+    ))
   }
 
   private def setProcesses(processes: Set[ProcessDescriptor]) = {
@@ -151,6 +160,45 @@ class StreamGenerator(
     }
 
     this.processes = processes
+  }
+
+  private def kafkaTopicsInit():Unit = {
+    val topic = config.getString(s"system.$configKey.config.kafka.topic.input")
+    val partitions = config.getString(s"system.$configKey.config.kafka.partition").toInt
+    val outputTopics: Seq[String] = config.getStringList(s"system.$configKey.config.kafka.topic.outputs").asScala.toSeq
+
+    deleteTopic(topic)
+    createTopic(topic, partitions)
+
+    outputTopics.foreach(deleteTopic)
+  }
+
+  def createTopic(inputTopic: String, partitions: Int = 1): Unit = {
+    val dirName = config.getString(s"system.kafka.path.home")
+    val zk_connections = config.getString(s"system.kafka.config.server.zookeeper.connect")
+
+    if (!existsTopic(inputTopic)) {
+      shell !! s"""$dirName/bin/kafka-topics.sh --create --zookeeper $zk_connections --replication-factor 1 --partitions $partitions --topic $inputTopic"""
+    }
+  }
+
+  def deleteTopic(inputTopic: String): Unit = {
+    val dirName = config.getString(s"system.kafka.path.home")
+    val zk_connections = config.getString(s"system.kafka.config.server.zookeeper.connect")
+
+    if (existsTopic(inputTopic)) {
+      shell !! s"""$dirName/bin/kafka-topics.sh --delete --zookeeper $zk_connections --topic $inputTopic"""
+    }
+  }
+
+  private def existsTopic(inputTopic: String): Boolean = {
+    val dirName = config.getString(s"system.kafka.path.home")
+    val zk_connections = config.getString(s"system.kafka.config.server.zookeeper.connect")
+
+    val count: Int = (shell !! s"""$dirName/bin/kafka-topics.sh --describe --zookeeper $zk_connections --topic $inputTopic 2>/dev/null""")
+      .split("\n").find(str => str.contains(inputTopic)).size
+
+    return count > 0
   }
 }
 

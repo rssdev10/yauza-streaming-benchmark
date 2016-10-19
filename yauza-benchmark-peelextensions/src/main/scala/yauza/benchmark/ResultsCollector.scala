@@ -23,7 +23,9 @@ object ResultsCollector {
   def main(args: Array[String]) {
     val gson = new Gson()
 
-    val config:Config = new Config("conf/benchmark.conf")
+    val configPath = if (args.isEmpty) "config" else args(0)
+
+    val config:Config = new Config(configPath + "/benchmark.properties")
     val kafkaProps = config.getKafkaProperties()
 
     val result = Array(
@@ -58,7 +60,9 @@ object ResultsCollector {
       val now = Calendar.getInstance().getTime()
       val formatter = new SimpleDateFormat("yyyyMMdd-HHmmss")
 
-      val pw = new PrintWriter(new File(s"${Config.OUTPUT_DIR}/results-${formatter.format(now)}.json"))
+      val outDir = if (args.isEmpty) Config.OUTPUT_DIR else args(1)
+
+      val pw = new PrintWriter(new File(s"${outDir}/results-${formatter.format(now)}.json"))
       pw.write(s"{'result':[\n$result\n]}")
       pw.close
 
