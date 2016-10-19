@@ -43,11 +43,10 @@ class benchmark extends ApplicationContextAware {
       name    = "benchmark.flink.default",
       command =
         """
-          |-v -c yauza.benchmark.flink.FlinkWC                      \
+          |-v -c yauza.benchmark.flink.FlinkApp                                  \
           |${app.path.apps}/yauza-benchmark-flink-jobs-1.0-SNAPSHOT.jar          \
-          |${system.hadoop-2.path.input}/rubbish.txt                            \
-          |${system.hadoop-2.path.output}/wordcount
-        """.stripMargin.trim,
+          |--config  ${app.path.home}/config/benchmark.properties
+          |""".stripMargin.trim,
       config  = ConfigFactory.parseString(""),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
@@ -59,10 +58,9 @@ class benchmark extends ApplicationContextAware {
       name    = "benchmark.spark.default",
       command =
         """
-          |--class yauza.benchmark.spark.SparkWC                    \
+          |--class yauza.benchmark.spark.SparkApp                    \
           |${app.path.apps}/yauza-benchmark-spark-jobs-1.0-SNAPSHOT.jar          \
-          |${system.hadoop-2.path.input}/rubbish.txt                            \
-          |${system.hadoop-2.path.output}/wordcount
+          |--config  ${app.path.home}/config/benchmark.properties
         """.stripMargin.trim,
       config  = ConfigFactory.parseString(""),
       runs    = 3,

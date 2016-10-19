@@ -33,7 +33,9 @@ class systems extends ApplicationContextAware {
     version      = "1.0.3",
     configKey    = "flink",
     lifespan     = Lifespan.EXPERIMENT,
-    dependencies = Set(ctx.getBean("hdfs-2.7.1", classOf[HDFS2])),
+    dependencies = Set(
+      ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+      ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
 
