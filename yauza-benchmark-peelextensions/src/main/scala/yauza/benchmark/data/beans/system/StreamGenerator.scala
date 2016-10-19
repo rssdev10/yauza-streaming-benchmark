@@ -48,15 +48,14 @@ class StreamGenerator(
   override def configuration() = SystemConfig(config, {
     val conf = config.getString(s"system.$configKey.path.config")
     List(
-      SystemConfig.Entry[Model.Yaml]( s"system.$configKey.config.server",
-        s"$conf/benchmark.properties", templatePath("conf/benchmark.properties"), mc)
+      SystemConfig.Entry[Model.Yaml]( s"system.$configKey.config",
+        s"$conf/benchmark.properties", templatePath("config/benchmark.properties"), mc)
     )
   })
 
 
   override protected def start(): Unit = {
     val pidFle = Paths.get(config.getString(s"system.$configKey.path.pids"))
-    val outDir = Paths.get(config.getString(s"system.$configKey.config.out.dir"))
 
     // ensure that the PID file is writable
     // otherwise, create an empty file or throw an error if this is not possible
