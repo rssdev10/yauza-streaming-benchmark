@@ -134,12 +134,6 @@
                     <version>${spark.version}</version>
                     <scope>compile</scope>
                 </dependency>
-                <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-mllib_2.10</artifactId>
-                    <version>${spark.mllib.version}</version>
-                    <scope>compile</scope>
-                </dependency>
             </dependencies>
         </profile>
     </profiles>
