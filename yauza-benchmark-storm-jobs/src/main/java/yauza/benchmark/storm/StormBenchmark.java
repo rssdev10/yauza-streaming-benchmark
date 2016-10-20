@@ -29,6 +29,10 @@ import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
 import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,9 +95,16 @@ public class StormBenchmark {
         String confFilename = cmd.getOptionValue("config");
 
         if (args.length == 0) {
-            if (new File(Config.CONFIF_FILE_NAME).isFile()) {
+            if (Files.isReadable(Paths.get(Config.CONFIF_FILE_NAME))) {
                 confFilename = Config.CONFIF_FILE_NAME;
             } else {
+                confFilename = new File(
+                        StormBenchmark.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath())
+                        .getParentFile().getAbsolutePath() + "/../config/benchmark.properties";
+                confFilename = FileSystems.getDefault().getPath(confFilename).normalize().toString();
+                System.out.print(confFilename);
+            }
+            if (!new File(confFilename).isFile()) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("benchmark-storm", opts, true);
                 System.exit(1);
