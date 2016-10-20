@@ -12,7 +12,7 @@ export BUNDLE_SRC=`pwd`
 #rm -Rf "$BUNDLE_BIN/$BUNDLE_AID"
 #cd $BUNDLE_SRC/$BUNDLE_AID
 
-mvn deploy -Pdev -DskipTests
+mvn clean -U deploy -Pdev -DskipTests
 
 #mvn clean deploy -Pdev
 
