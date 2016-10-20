@@ -15,6 +15,8 @@ import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
 import yauza.benchmark.flink.beans.experiment.FlinkStreamingExperiment
 import yauza.benchmark.spark.beans.experiment.SparkStreamingExperiment
+import yauza.benchmark.storm.beans.experiment.StormExperiment
+import yauza.benchmark.storm.beans.system.Storm
 
 /** `Yauza-benchmark` experiment fixtures for the 'yauza-benchmark' bundle. */
 
@@ -72,9 +74,26 @@ class benchmark extends ApplicationContextAware {
       outputs = Set.empty
     )
 
+    val `benchmark.storm.default` = new StormExperiment(
+      name    = "benchmark.storm.default",
+      command =
+        """
+          |jar ${app.path.apps}/yauza-benchmark-storm-jobs-1.0-SNAPSHOT.jar
+          |yauza.benchmark.storm.StormBenchmark
+          |StormBenchmark
+        """.stripMargin.replace("\n", " ").trim,
+      config  = ConfigFactory.parseString(""),
+      runs    = 3,
+      runner  = ctx.getBean("storm-1.0.2", classOf[Storm]),
+      inputs  = Set.empty,
+      outputs = Set.empty
+    )
+
     new ExperimentSuite(Seq(
       `benchmark.flink.default`,
-      `benchmark.spark.default`))
+      `benchmark.spark.default`,
+      `benchmark.storm.default`
+    ))
   }
 
   @Bean(name = Array("benchmark.scale-out"))
