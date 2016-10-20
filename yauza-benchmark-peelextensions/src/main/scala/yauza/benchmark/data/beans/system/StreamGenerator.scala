@@ -167,10 +167,11 @@ class StreamGenerator(
     val partitions = config.getString(s"system.$configKey.config.kafka.partition").toInt
     val outputTopics: Seq[String] = config.getStringList(s"system.$configKey.config.kafka.topic.outputs").asScala.toSeq
 
-    deleteTopic(topic)
+//    deleteTopic(topic)
     createTopic(topic, partitions)
 
-    outputTopics.foreach(deleteTopic)
+//    outputTopics.foreach(deleteTopic)
+//    Thread.sleep(5000)
   }
 
   def createTopic(inputTopic: String, partitions: Int = 1): Unit = {
