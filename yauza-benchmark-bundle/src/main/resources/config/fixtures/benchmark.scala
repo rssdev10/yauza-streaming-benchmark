@@ -13,6 +13,9 @@ import org.peelframework.spark.beans.system.Spark
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
+import yauza.benchmark.flink.beans.experiment.FlinkStreamingExperiment
+import yauza.benchmark.spark.beans.experiment.SparkStreamingExperiment
+
 /** `Yauza-benchmark` experiment fixtures for the 'yauza-benchmark' bundle. */
 
 @Configuration
@@ -39,14 +42,14 @@ class benchmark extends ApplicationContextAware {
 
   @Bean(name = Array("benchmark.default"))
   def `benchmark.default`: ExperimentSuite = {
-    val `benchmark.flink.default` = new FlinkExperiment(
+    val `benchmark.flink.default` = new FlinkStreamingExperiment(
       name    = "benchmark.flink.default",
       command =
         """
-          |-v -c yauza.benchmark.flink.FlinkApp                                  \
-          |${app.path.apps}/yauza-benchmark-flink-jobs-1.0-SNAPSHOT.jar          \
+          |-v -c yauza.benchmark.flink.FlinkApp
+          |${app.path.apps}/yauza-benchmark-flink-jobs-1.0-SNAPSHOT.jar
           |--config  ${app.path.home}/config/benchmark.properties
-          |""".stripMargin.trim,
+          |""".stripMargin.replace("\n", " ").trim,
       config  = ConfigFactory.parseString(""),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
@@ -54,14 +57,14 @@ class benchmark extends ApplicationContextAware {
       outputs = Set.empty
     )
 
-    val `benchmark.spark.default` = new SparkExperiment(
+    val `benchmark.spark.default` = new SparkStreamingExperiment(
       name    = "benchmark.spark.default",
       command =
         """
-          |--class yauza.benchmark.spark.SparkApp                    \
-          |${app.path.apps}/yauza-benchmark-spark-jobs-1.0-SNAPSHOT.jar          \
+          |--class yauza.benchmark.spark.SparkBenchmark
+          |${app.path.apps}/yauza-benchmark-spark-jobs-1.0-SNAPSHOT.jar
           |--config  ${app.path.home}/config/benchmark.properties
-        """.stripMargin.trim,
+        """.stripMargin.replace("\n", " ").trim,
       config  = ConfigFactory.parseString(""),
       runs    = 3,
       runner  = ctx.getBean("spark-2.0.0", classOf[Spark]),

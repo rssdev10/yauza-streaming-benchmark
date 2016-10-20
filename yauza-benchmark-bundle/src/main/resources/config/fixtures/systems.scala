@@ -3,8 +3,8 @@ package config.fixtures
 import yauza.benchmark.kafka.beans.system.Kafka
 import yauza.benchmark.storm.beans.system.Storm
 import yauza.benchmark.data.beans.system.StreamGenerator
-
 import com.samskivert.mustache.Mustache
+import com.samskivert.mustache.Mustache.Compiler
 import org.peelframework.core.beans.system.{Lifespan, System}
 import org.peelframework.flink.beans.system.Flink
 import org.peelframework.hadoop.beans.system.HDFS2
@@ -37,7 +37,7 @@ class systems extends ApplicationContextAware {
                         ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
                         ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
 
-    mc           = ctx.getBean(classOf[Mustache.Compiler])
+    mc           = ctx.getBean(classOf[Compiler])
   )
 
   @Bean(name = Array("spark-2.0.0"))
@@ -56,7 +56,7 @@ class systems extends ApplicationContextAware {
   def `kafka-0.8.2.2`: Kafka = new Kafka(
     version      = "0.8.2.2",
     configKey    = "kafka",
-    lifespan     = Lifespan.EXPERIMENT,
+    lifespan     = Lifespan.RUN,
     dependencies = Set(ctx.getBean("zookeeper-3.4.5", classOf[Zookeeper])),
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
