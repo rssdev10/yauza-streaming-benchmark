@@ -12,6 +12,9 @@ import yauza.benchmark.common.Config;
 import yauza.benchmark.common.Event;
 
 import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class SparkBenchmark {
@@ -59,6 +62,7 @@ public class SparkBenchmark {
 
         Config config;
         if (confFilename != null) {
+            confFilename = FileSystems.getDefault().getPath(confFilename).normalize().toAbsolutePath().toString();
             config = new Config(confFilename);
         } else {
             config = new Config(props);
