@@ -1,6 +1,7 @@
 package yauza.benchmark.storm.beans.system
 
 import com.samskivert.mustache.Mustache
+import org.peelframework.core.beans.experiment.Experiment.Run
 import org.peelframework.core.beans.system.Lifespan.Lifespan
 import org.peelframework.core.beans.system.System
 import org.peelframework.core.config.{Model, SystemConfig}
@@ -141,7 +142,21 @@ class Storm(
     Await.result(futureProcessDescriptors, Math.max(30, 5 * hosts.size).seconds).exists(seq => seq.exists(_ > 0))
   }
 
-    // ---------------------------------------------------
+  override def beforeRun(run: Run[System]): Unit = {
+    // handle dependencies
+    for (s <- dependencies) {
+      s.beforeRun(run)
+    }
+  }
+
+  override def afterRun(run: Run[System]): Unit = {
+    // handle dependencies
+    for (s <- dependencies) {
+      s.afterRun(run)
+    }
+  }
+
+  // ---------------------------------------------------
   // Helper methods.
   // ---------------------------------------------------
 
