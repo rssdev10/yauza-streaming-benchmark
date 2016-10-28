@@ -108,8 +108,8 @@ public class SparkBenchmark {
         Map<String, String> kafkaParams = new HashMap<String, String>() {
             {
                 put("metadata.broker.list", bootstrapServers);
-                put("auto.offset.reset", "smallest");
-                //put("auto.offset.reset", "largest");
+                //put("auto.offset.reset", "smallest");
+                put("auto.offset.reset", "largest");
             }
         };
 
