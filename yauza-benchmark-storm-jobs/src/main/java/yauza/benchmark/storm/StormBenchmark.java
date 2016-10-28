@@ -51,7 +51,8 @@ public class StormBenchmark {
     public static org.apache.storm.Config getConsumerConfig() {
         org.apache.storm.Config conf = new org.apache.storm.Config();
         conf.setMaxSpoutPending(20);
-        //  conf.setDebug(true);
+//        conf.setDebug(true);
+
         return conf;
     }
 
@@ -60,8 +61,9 @@ public class StormBenchmark {
         spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
 
         // Consume new data from the topic
-        //spoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
-        spoutConfig.startOffsetTime = kafka.api.OffsetRequest.EarliestTime();
+        spoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
+//        spoutConfig.startOffsetTime = kafka.api.OffsetRequest.EarliestTime();
+
         TransactionalTridentKafkaSpout result = new TransactionalTridentKafkaSpout(spoutConfig);
         Fields a = result.getOutputFields();
         return result;
