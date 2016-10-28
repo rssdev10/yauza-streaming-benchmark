@@ -3,6 +3,8 @@ package yauza.benchmark.storm;
 import com.google.gson.Gson;
 import org.apache.commons.cli.*;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.StormTopology;
 import org.apache.storm.kafka.StringScheme;
 import org.apache.storm.kafka.ZkHosts;
 import org.apache.storm.kafka.trident.TransactionalTridentKafkaSpout;
@@ -188,14 +190,20 @@ public class StormBenchmark {
 
         org.apache.storm.Config stormConfig = getConsumerConfig();
         stormConfig.setNumWorkers(partNum * outputStreams.size());
-        LocalCluster cluster = new LocalCluster();
-        cluster.submitTopology("benchmark", stormConfig, tridentTopology.build());
 
-        Thread.sleep(Integer.parseInt(config.getProperty(Config.PROP_TEST_DURATION, "60")) * 1000);
+        StormTopology topology = tridentTopology.build();
 
-        cluster.killTopology("benchmark");
-        cluster.shutdown();
+        if (args != null && args.length > 0) {
+            StormSubmitter.submitTopologyWithProgressBar(args[0], stormConfig, topology);
+        } else {
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology("benchmark", stormConfig, topology);
 
+            Thread.sleep(Integer.parseInt(config.getProperty(Config.PROP_TEST_DURATION, "60")) * 1000);
+
+            cluster.killTopology("benchmark");
+            cluster.shutdown();
+        }
     }
 
     public static HashMap<String, Stream> buildTopology(Stream stream) {
