@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class Config {
-    public static final String CONFIF_FILE_NAME = "conf/benchmark.conf";
+    public static final String CONFIF_FILE_NAME = "config/benchmark.properties";
 
     public static final String OUTPUT_DIR = "output";
 
