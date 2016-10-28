@@ -83,6 +83,8 @@ object StormExperiment {
 
     val runnerLogPath = exp.config.getString(s"system.${exp.runner.configKey}.path.log")
 
+    var cancel = false
+
     override def isSuccessful = state.runExitCode.getOrElse(-1) == 0
 
     override protected def loadState(): State = {
@@ -105,12 +107,21 @@ object StormExperiment {
 
     override protected def runJob() = {
       val execTime = exp.config.getLong("experiment.streaming.timeout") seconds;
+
+      val beginTime = java.lang.System.currentTimeMillis();
       try {
         def runJobFunc: (Int, Long) = Experiment.time(this ! (command, s"$home/run.out", s"$home/run.err"))
         // try to execute the experiment run plan
         val (runExit, t) = Await.result(future(runJobFunc), execTime)
         state.runTime = t
         state.runExitCode = Some(runExit)
+
+        val additionalTime: Long = execTime.toMillis - (java.lang.System.currentTimeMillis() - beginTime)
+
+        if (additionalTime / 1000 > 0 && !cancel) {
+          logger.info(s"Awaiting end of the experiment during ${additionalTime / 1000} seconds")
+          Thread.sleep(additionalTime)
+        }
       } catch {
         case e: TimeoutException =>
           logger.info(s"Experiment terminated after ${execTime} seconds")
@@ -120,7 +131,7 @@ object StormExperiment {
     }
 
     override def cancelJob() = {
-
+      cancel = true
     }
 
     private def !(command: String, outFile: String, errFile: String) = {
