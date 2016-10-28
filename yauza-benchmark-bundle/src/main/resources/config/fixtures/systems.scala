@@ -6,6 +6,7 @@ import yauza.benchmark.data.beans.system.StreamGenerator
 import com.samskivert.mustache.Mustache
 import com.samskivert.mustache.Mustache.Compiler
 import org.peelframework.core.beans.system.{Lifespan, System}
+import org.peelframework.dstat.beans.system.Dstat
 import org.peelframework.flink.beans.system.Flink
 import org.peelframework.hadoop.beans.system.HDFS2
 import org.peelframework.spark.beans.system.Spark
@@ -74,12 +75,23 @@ class systems extends ApplicationContextAware {
     mc           = ctx.getBean(classOf[Mustache.Compiler])
   )
 
+  @Bean(name = Array("dstat-0.7.2"))
+  def `dstat-0.7.2`: Dstat = new Dstat(
+    version      = "0.7.2",
+    configKey    = "dstat",
+    lifespan     = Lifespan.RUN,
+    dependencies = Set.empty,
+    mc           = ctx.getBean(classOf[Mustache.Compiler])
+  )
+
   @Bean(name = Array("stream-1.0.0"))
   def `stream-1.0.0`: StreamGenerator = new StreamGenerator(
     version      = "1.0.0",
     configKey    = "benchmark",
     lifespan     = Lifespan.RUN,
-    dependencies = Set(ctx.getBean("kafka-0.8.2.2", classOf[Kafka])),
+    dependencies = Set(
+                      ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                      ctx.getBean("dstat-0.7.2", classOf[Dstat])),
     mc           = ctx.getBean(classOf[Mustache.Compiler]),
     "yauza-benchmark-datagens-1.0-SNAPSHOT.jar"
   )
