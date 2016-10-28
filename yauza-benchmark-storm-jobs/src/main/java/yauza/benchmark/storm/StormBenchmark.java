@@ -100,13 +100,12 @@ public class StormBenchmark {
             if (Files.isReadable(Paths.get(Config.CONFIF_FILE_NAME))) {
                 confFilename = Config.CONFIF_FILE_NAME;
             } else {
-                final String filename = "/config/benchmark.properties";
                 confFilename = new File(
                         StormBenchmark.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath())
-                        .getParentFile().getAbsolutePath() + "/../" + filename;
+                        .getParentFile().getAbsolutePath() + "/../" + Config.CONFIF_FILE_NAME;
                 confFilename = FileSystems.getDefault().getPath(confFilename).normalize().toString();
                 if (!Files.isReadable(Paths.get(confFilename))) {
-                    confFilename = System.getProperty("user.dir") + filename;
+                    confFilename = System.getProperty("user.dir") + "/" + Config.CONFIF_FILE_NAME;
                     confFilename = FileSystems.getDefault().getPath(confFilename).normalize().toString();
                 }
                 System.out.print(confFilename);
