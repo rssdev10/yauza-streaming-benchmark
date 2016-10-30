@@ -36,6 +36,7 @@ class systems extends ApplicationContextAware {
     lifespan     = Lifespan.EXPERIMENT,
     dependencies = Set(
                         ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                        ctx.getBean("dstat-0.7.2", classOf[Dstat]),
                         ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
 
     mc           = ctx.getBean(classOf[Compiler])
@@ -48,6 +49,7 @@ class systems extends ApplicationContextAware {
     lifespan     = Lifespan.EXPERIMENT,
     dependencies = Set(
                         ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                        ctx.getBean("dstat-0.7.2", classOf[Dstat]),
                         ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
 
     mc           = ctx.getBean(classOf[Mustache.Compiler])
@@ -70,6 +72,7 @@ class systems extends ApplicationContextAware {
     dependencies = Set(
                       ctx.getBean("zookeeper-3.4.5", classOf[Zookeeper]),
                       ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
+                      ctx.getBean("dstat-0.7.2", classOf[Dstat]),
                       ctx.getBean("stream-1.0.0", classOf[StreamGenerator])),
 
     mc           = ctx.getBean(classOf[Mustache.Compiler])
@@ -89,9 +92,7 @@ class systems extends ApplicationContextAware {
     version      = "1.0.0",
     configKey    = "benchmark",
     lifespan     = Lifespan.RUN,
-    dependencies = Set(
-                      ctx.getBean("kafka-0.8.2.2", classOf[Kafka]),
-                      ctx.getBean("dstat-0.7.2", classOf[Dstat])),
+    dependencies = Set.empty,
     mc           = ctx.getBean(classOf[Mustache.Compiler]),
     "yauza-benchmark-datagens-1.0-SNAPSHOT.jar"
   )
