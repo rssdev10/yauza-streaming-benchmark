@@ -102,18 +102,15 @@ class benchmark extends ApplicationContextAware {
       name    = "benchmark.flink.__topXXX__",
       command =
         """
-          |-v -c yauza.benchmark.flink.FlinkWC                      \
-          |${app.path.apps}/yauza-benchmark-flink-jobs-1.0-SNAPSHOT.jar          \
-          |${system.hadoop-2.path.input}/rubbish.txt                            \
-          |${system.hadoop-2.path.output}/wordcount
-        """.stripMargin.trim,
+          |-v -c yauza.benchmark.flink.FlinkApp
+          |${app.path.apps}/yauza-benchmark-flink-jobs-1.0-SNAPSHOT.jar
+          |--config  ${app.path.home}/config/benchmark.properties
+          |""".stripMargin.replace("\n", " ").trim,
       config  = ConfigFactory.parseString(
         """
           |system.default.config.slaves            = ${env.slaves.__topXXX__.hosts}
           |system.default.config.parallelism.total = ${env.slaves.__topXXX__.total.parallelism}
-          |datagen.dictionary.dize                 = 10000
-          |datagen.tuples.per.task                 = 10000000 # ~ 100 MB
-          |datagen.data-distribution               = Uniform
+          |system.kafka.config.hosts               = ${env.slaves.__topXXX__.hosts}
         """.stripMargin.trim),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
@@ -125,21 +122,38 @@ class benchmark extends ApplicationContextAware {
       name    = "benchmark.spark.__topXXX__",
       command =
         """
-          |--class yauza.benchmark.spark.SparkWC                    \
-          |${app.path.apps}/yauza-benchmark-spark-jobs-1.0-SNAPSHOT.jar          \
-          |${system.hadoop-2.path.input}/rubbish.txt                            \
-          |${system.hadoop-2.path.output}/wordcount
-        """.stripMargin.trim,
+          |--class yauza.benchmark.spark.SparkBenchmark
+          |${app.path.apps}/yauza-benchmark-spark-jobs-1.0-SNAPSHOT.jar
+          |--config  ${app.path.home}/config/benchmark.properties
+        """.stripMargin.replace("\n", " ").trim,
       config  = ConfigFactory.parseString(
         """
           |system.default.config.slaves            = ${env.slaves.__topXXX__.hosts}
           |system.default.config.parallelism.total = ${env.slaves.__topXXX__.total.parallelism}
-          |datagen.dictionary.dize                 = 10000
-          |datagen.tuples.per.task                 = 10000000 # ~ 100 MB
-          |datagen.data-distribution               = Uniform
+          |system.kafka.config.hosts               = ${env.slaves.__topXXX__.hosts}
         """.stripMargin.trim),
       runs    = 3,
       runner  = ctx.getBean("spark-2.0.0", classOf[Spark]),
+      inputs  = Set.empty,
+      outputs = Set.empty
+    )
+
+    val `benchmark.storm.prototype` = new StormExperiment(
+      name    = "benchmark.storm.default",
+      command =
+        """
+          |jar ${app.path.apps}/yauza-benchmark-storm-jobs-1.0-SNAPSHOT.jar
+          |yauza.benchmark.storm.StormBenchmark
+          |StormBenchmark
+        """.stripMargin.replace("\n", " ").trim,
+      config  = ConfigFactory.parseString(
+        """
+          |system.default.config.slaves            = ${env.slaves.__topXXX__.hosts}
+          |system.default.config.parallelism.total = ${env.slaves.__topXXX__.total.parallelism}
+          |system.kafka.config.hosts               = ${env.slaves.__topXXX__.hosts}
+        """.stripMargin.trim),
+      runs    = 3,
+      runner  = ctx.getBean("storm-1.0.2", classOf[Storm]),
       inputs  = Set.empty,
       outputs = Set.empty
     )
@@ -151,6 +165,8 @@ class benchmark extends ApplicationContextAware {
           paramVals = Seq("top005", "top010", "top020")),
         prototypes = Seq(
           `benchmark.flink.prototype`,
-          `benchmark.spark.prototype`)))
+          `benchmark.spark.prototype`,
+          `benchmark.storm.prototype`
+        )))
   }
 }
