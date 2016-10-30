@@ -149,7 +149,9 @@ class StreamGenerator(
     ResultsCollector.fetchResults(
       config.getString(s"system.$configKey.path.config"),
       config.getString("app.path.results"),
-      filename.getOrElse("result.json")
+      filename.getOrElse("result.json"),
+      config.getString(s"system.$configKey.config.bootstrap.servers"),
+      config.getString(s"system.$configKey.config.zookeeper.connect")
     )
   }
 

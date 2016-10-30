@@ -31,10 +31,10 @@ object ResultsCollector {
       s"results-${formatter.format(now)}.json"
     }
 
-    fetchResults(configPath, outDir, fileName)
+    fetchResults(configPath, outDir, fileName, "localhost:9092", "localhost:2181")
   }
 
-  def fetchResults(configPath:String, resultPath:String, filename:String) {
+  def fetchResults(configPath:String, resultPath:String, filename:String, bootstrapServer:String, zookeeper:String) {
     val gson = new Gson()
 
     val config:Config = new Config(configPath + "/benchmark.properties")
@@ -49,7 +49,7 @@ object ResultsCollector {
       .par
       .map(str => "out-" + str) // add common suffix
       .map(queue => {
-        val array = new Consumer(queue, kafkaProps).run()
+        val array = new Consumer(queue, kafkaProps, bootstrapServer, zookeeper).run()
         array.foldLeft(new Experiment(queue)){(acc:Experiment, item:Product) => {
           if (item.getProcessedEvents > 0) {
             acc.latency.addValue(item.getLatency)
@@ -80,8 +80,8 @@ object ResultsCollector {
     }
   }
 
-  class Consumer (val topic: String, val props:Properties) {
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+  class Consumer (val topic: String, val props:Properties, val bootstrapServer:String, val zookeeper:String) {
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "yauza"
       + scala.util.Random.nextInt(1000).toString); //debug feature to avoid seek operaion
     //props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
@@ -98,7 +98,7 @@ object ResultsCollector {
     props.put("session.timeout.ms", "30000");
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "smallest");
     props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "range");
-    props.put("zookeeper.connect", "localhost:2181");
+    props.put("zookeeper.connect", zookeeper);
 
 //  val consumer:KafkaConsumer[Integer, String] = new KafkaConsumer(props);
 
