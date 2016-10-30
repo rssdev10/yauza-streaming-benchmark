@@ -21,9 +21,21 @@ object ResultsCollector {
 
   @throws[Exception]
   def main(args: Array[String]) {
-    val gson = new Gson()
-
     val configPath = if (args.isEmpty) "config" else args(0)
+    val outDir = if (args.isEmpty) Config.OUTPUT_DIR else args(1)
+    val fileName = if (args.length >= 2 ) {
+      args(2)
+    } else {
+      val now = Calendar.getInstance().getTime()
+      val formatter = new SimpleDateFormat("yyyyMMdd-HHmmss")
+      s"results-${formatter.format(now)}.json"
+    }
+
+    fetchResults(configPath, outDir, fileName)
+  }
+
+  def fetchResults(configPath:String, resultPath:String, filename:String) {
+    val gson = new Gson()
 
     val config:Config = new Config(configPath + "/benchmark.properties")
     val kafkaProps = config.getKafkaProperties()
@@ -55,14 +67,9 @@ object ResultsCollector {
       }).mkString(",\n")
 
     try {
-      new File(Config.OUTPUT_DIR).mkdirs()
+      new File(resultPath).mkdirs()
 
-      val now = Calendar.getInstance().getTime()
-      val formatter = new SimpleDateFormat("yyyyMMdd-HHmmss")
-
-      val outDir = if (args.isEmpty) Config.OUTPUT_DIR else args(1)
-
-      val pw = new PrintWriter(new File(s"${outDir}/results-${formatter.format(now)}.json"))
+      val pw = new PrintWriter(new File(s"${resultPath}/${filename}"))
       pw.write(s"{'result':[\n$result\n]}")
       pw.close
 

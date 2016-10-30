@@ -139,11 +139,18 @@ class StreamGenerator(
     })
     setProcesses(processes diff Await.result(futureCopyContents, Math.max(30, 5 * hosts.size).seconds))
 
+    var resultPath:String = config.getString("app.path.results")
+
+    val filename = for (run <- runOpt) yield {
+      "results-" + run.home.substring(run.home.lastIndexOf('/') + 1) + ".json"
+    }
+
     // collect data from Kafka
-    ResultsCollector.main(Array[String](
+    ResultsCollector.fetchResults(
       config.getString(s"system.$configKey.path.config"),
-      config.getString("app.path.results")
-    ))
+      config.getString("app.path.results"),
+      filename.getOrElse("result.json")
+    )
   }
 
   private def setProcesses(processes: Set[ProcessDescriptor]) = {
