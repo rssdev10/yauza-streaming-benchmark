@@ -77,3 +77,16 @@ drpc.servers:
 
 storm.log.dir: "{{storm.log.dir}}"
 storm.local.dir: "{{storm.local.dir}}"
+
+supervisor.slots.ports:
+{{#supervisor.slots.ports}}
+    - {{.}}
+{{/supervisor.slots.ports}}
+
+supervisor.memory.capacity.mb: {{supervisor.memory.capacity.mb}}
+
+worker.heap.memory.mb: {{worker.heap.memory.mb}}
+
+topology.workers: {{topology.workers}}
+
+ui.port: {{ui.port}}
