@@ -50,7 +50,7 @@ public class StormBenchmark {
 
     public static org.apache.storm.Config getConsumerConfig() {
         org.apache.storm.Config conf = new org.apache.storm.Config();
-        conf.setMaxSpoutPending(20);
+//        conf.setMaxSpoutPending(20);
 //        conf.setDebug(true);
 
         return conf;
@@ -190,7 +190,7 @@ public class StormBenchmark {
         }
 
         org.apache.storm.Config stormConfig = getConsumerConfig();
-        stormConfig.setNumWorkers(partNum * outputStreams.size());
+//        stormConfig.setNumWorkers(partNum * outputStreams.size());
 
         StormTopology topology = tridentTopology.build();
 
