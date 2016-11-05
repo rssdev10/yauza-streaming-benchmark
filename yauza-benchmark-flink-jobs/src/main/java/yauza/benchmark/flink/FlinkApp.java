@@ -49,7 +49,8 @@ public class FlinkApp {
         Properties kafkaProps = config.getKafkaProperties();
 
         kafkaProps.put("enable.auto.commit", "false");
-        kafkaProps.put("auto.offset.reset", "smallest");
+        //kafkaProps.put("auto.offset.reset", "smallest");
+        kafkaProps.put("auto.offset.reset", "largest");
 
         partNum = Integer.parseInt(config.getProperty(Config.PROP_PARTITIONS_NUMBER, "3"));
         windowDurationTime = Integer.parseInt(config.getProperty(Config.PROP_WINDOW_DURATION, "10"));
