@@ -70,7 +70,7 @@ object ResultsCollector {
       new File(resultPath).mkdirs()
 
       val pw = new PrintWriter(new File(s"${resultPath}/${filename}"))
-      pw.write(s"{'result':[\n$result\n]}")
+      pw.write(s"""{"result":[\n$result\n]}""")
       pw.close
 
     } catch {
