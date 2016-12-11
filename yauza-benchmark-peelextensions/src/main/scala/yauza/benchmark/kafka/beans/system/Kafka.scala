@@ -43,18 +43,20 @@ class Kafka(
     )
   }) with ReplicateServerConfigs
 
+  protected def cleanupServerDirsCmd(host: String): String = {
+    val user = config.getString(s"system.$configKey.user")
+    val log = config.getString(s"system.$configKey.path.log")
+    val binlogDirs = config.getString(s"system.$configKey.config.server.log.dirs").split(',')
+    val initDirs = log +: binlogDirs // directories to be initialized on each host
+    val cmd = initDirs.map(path => s"rm -Rf $path && mkdir -p $path").mkString(" && ")
+    s""" ssh $user@$host "$cmd" """
+  }
+
   override protected def start(): Unit = {
     val user = config.getString(s"system.$configKey.user")
     val home = config.getString(s"system.$configKey.path.home")
     val log = config.getString(s"system.$configKey.path.log")
-    val binlogDirs = config.getString(s"system.$configKey.config.server.log.dirs").split(',')
     val startUpTimeout = config.getString(s"system.$configKey.startup.timeout").toInt
-
-    val initServerDirsCmd = (host: String) => {
-      val initDirs = log +: binlogDirs // directories to be initialized on each host
-      val cmd = initDirs.map(path => s"rm -Rf $path && mkdir -p $path").mkString(" && ")
-      s""" ssh $user@$host "$cmd" """
-    }
 
     val startServerCmd = (host: String) =>
       s"""
@@ -72,7 +74,7 @@ class Kafka(
     val futures = Future.traverse(hosts)(host => for {
       initServerDirs <- Future {
         logger.info(s"Initializing Kafka directories at $host")
-        shell ! (initServerDirsCmd(host), s"Unable to initialize Kafka directories at $host.")
+        shell ! (cleanupServerDirsCmd(host), s"Unable to initialize Kafka directories at $host.")
       }
       startServer <- Future {
         logger.info(s"Starting Kafka server at $host")
@@ -105,6 +107,10 @@ class Kafka(
 
     logger.info("Stopping Kafka processes on all hosts")
     val futures = Future.traverse(hosts)(host => for {
+      cleanupServerDirs <- Future {
+        logger.info(s"Cleaning up Kafka directories at $host")
+        shell ! (cleanupServerDirsCmd(host), s"Unable to cleanup Kafka directories at $host.")
+      }
       stopServer <- Future {
         logger.info(s"Stopping Kafka server at $host")
         shell ! (stopServerCmd(host), s"Unable to stop Kafka server on host '$host'.")
