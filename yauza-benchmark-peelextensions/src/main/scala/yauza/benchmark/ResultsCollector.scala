@@ -163,7 +163,9 @@ object ResultsCollector {
     def addValue(value:Long): Unit ={
       max = Math.max(max, value)
       min = Math.min(min, value)
-      avr = (avr * count + value) / (count + 1.0)
+
+      // prevent possible accuracy lost with big count: avr = (avr * count + value) / (count + 1.0)
+      avr = avr * (count / (count + 1.0)) + value / (count + 1.0)
       count += 1
     }
   }
