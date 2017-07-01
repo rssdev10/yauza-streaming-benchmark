@@ -110,8 +110,8 @@ This benchmark based on Peel Framework. The result of building is a standalone
 Use Peel related commands.
 
 There are tree configuration for Apache Flink, Apache Spark and Apache Storm. 
-See `~/bundles/bin/yauza-benchmark/fixtures/config/system.scala` and `~/bundles/bin/yauza-benchmark/fixtures/config/benchmark.scala` 
-after installation. Or see sources [system](yauza-benchmark-bundle/src/main/resources/config/fixtures/config/system.scala) and [benchmark description](yauza-benchmark-bundle/src/main/resources/config/fixtures/benchmark.scala).
+See `~/bundles/bin/yauza-benchmark/config/fixtures/systems.scala` and `~/bundles/bin/yauza-benchmark/config/fixtures/benchmark.scala` 
+after installation. Or see sources [systems](yauza-benchmark-bundle/src/main/resources/config/fixtures/systems.scala) and [benchmark description](yauza-benchmark-bundle/src/main/resources/config/fixtures/benchmark.scala).
 
 
 Run all experiments on single node:
