@@ -43,10 +43,27 @@ class FlinkStreamingExperiment(
 object FlinkStreamingExperiment {
   class SingleJobRun (id: Int, exp: FlinkStreamingExperiment, force: Boolean) extends
     FlinkExperiment.SingleJobRun(id, exp, force) {
+
+    var cancel: Boolean = false
+
+    override def cancelJob():Unit = {
+      cancel = true
+      super.cancelJob()
+    }
+
     override protected def runJob() = {
       val t = exp.config.getLong("experiment.streaming.timeout") seconds;
       try {
+        val beginTime = java.lang.System.currentTimeMillis();
+
         Await.ready(future(super.runJob()), t)
+
+        val additionalTime: Long = t.toMillis - (java.lang.System.currentTimeMillis() - beginTime)
+
+        if (additionalTime / 1000 > 0 && !cancel) {
+          logger.info(s"Awaiting end of the experiment during ${additionalTime / 1000} seconds")
+          Thread.sleep(additionalTime)
+        }
       } catch {
         case e: TimeoutException =>
           logger.info(s"Experiment terminated after ${t} seconds")

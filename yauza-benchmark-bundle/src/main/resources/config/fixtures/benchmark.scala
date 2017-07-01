@@ -98,7 +98,7 @@ class benchmark extends ApplicationContextAware {
 
   @Bean(name = Array("benchmark.scale-out"))
   def `benchmark.scale-out`: ExperimentSuite = {
-    val `benchmark.flink.prototype` = new FlinkExperiment(
+    val `benchmark.flink.prototype` = new FlinkStreamingExperiment(
       name    = "benchmark.flink.__topXXX__",
       command =
         """
@@ -111,6 +111,8 @@ class benchmark extends ApplicationContextAware {
           |system.default.config.slaves            = ${env.slaves.__topXXX__.hosts}
           |system.default.config.parallelism.total = ${env.slaves.__topXXX__.total.parallelism}
           |system.kafka.config.hosts               = ${env.slaves.__topXXX__.hosts}
+          |system.benchmark.config.kafka.partition = ${env.slaves.__topXXX__.total.hosts}
+          |system.benchmark.config.bootstrap.servers = ${env.slaves.__topXXX__.hosts[0]}":9092"
         """.stripMargin.trim),
       runs    = 3,
       runner  = ctx.getBean("flink-1.0.3", classOf[Flink]),
@@ -118,7 +120,7 @@ class benchmark extends ApplicationContextAware {
       outputs = Set.empty
     )
 
-    val `benchmark.spark.prototype` = new SparkExperiment(
+    val `benchmark.spark.prototype` = new SparkStreamingExperiment(
       name    = "benchmark.spark.__topXXX__",
       command =
         """
